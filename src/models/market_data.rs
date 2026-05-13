@@ -16,8 +16,10 @@ pub type QuoteResponse = HashMap<String, QuoteResponseObject>;
 // QuoteResponseObject (untagged union of all asset-type responses + error)
 // ---------------------------------------------------------------------------
 
+/// Quote response dispatched by asset type.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(untagged)]
+#[allow(missing_docs)]
 pub enum QuoteResponseObject {
     Equity(EquityResponse),
     Option(OptionResponse),
@@ -33,8 +35,10 @@ pub enum QuoteResponseObject {
 // Per-asset response structs
 // ---------------------------------------------------------------------------
 
+/// Equity asset quote response.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct EquityResponse {
     pub asset_main_type: Option<AssetMainType>,
     pub asset_sub_type: Option<EquityAssetSubType>,
@@ -49,8 +53,10 @@ pub struct EquityResponse {
     pub symbol: Option<String>,
 }
 
+/// Option contract quote response.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OptionResponse {
     pub asset_main_type: Option<AssetMainType>,
     pub quote: Option<OptionQuote>,
@@ -60,8 +66,10 @@ pub struct OptionResponse {
     pub symbol: Option<String>,
 }
 
+/// Forex pair quote response.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct ForexResponse {
     pub asset_main_type: Option<AssetMainType>,
     pub quote: Option<ForexQuote>,
@@ -71,8 +79,10 @@ pub struct ForexResponse {
     pub symbol: Option<String>,
 }
 
+/// Futures contract quote response.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct FutureResponse {
     pub asset_main_type: Option<AssetMainType>,
     pub quote: Option<FutureQuote>,
@@ -82,8 +92,10 @@ pub struct FutureResponse {
     pub symbol: Option<String>,
 }
 
+/// Futures option contract quote response.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct FutureOptionResponse {
     pub asset_main_type: Option<AssetMainType>,
     pub quote: Option<FutureOptionQuote>,
@@ -93,8 +105,10 @@ pub struct FutureOptionResponse {
     pub symbol: Option<String>,
 }
 
+/// Index quote response.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct IndexResponse {
     pub asset_main_type: Option<AssetMainType>,
     pub quote: Option<IndexQuote>,
@@ -104,8 +118,10 @@ pub struct IndexResponse {
     pub symbol: Option<String>,
 }
 
+/// Mutual fund quote response.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct MutualFundResponse {
     pub asset_main_type: Option<AssetMainType>,
     pub asset_sub_type: Option<MutualFundAssetSubType>,
@@ -121,8 +137,10 @@ pub struct MutualFundResponse {
 // Per-asset quote structs
 // ---------------------------------------------------------------------------
 
+/// Equity quote market data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct EquityQuote {
     #[serde(rename = "52WeekHigh")]
     pub week_high_52: Option<Number>,
@@ -158,8 +176,10 @@ pub struct EquityQuote {
     pub volatility: Option<Number>,
 }
 
+/// Option quote market data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OptionQuote {
     #[serde(rename = "52WeekHigh")]
     pub week_high_52: Option<Number>,
@@ -201,8 +221,10 @@ pub struct OptionQuote {
     pub volatility: Option<Number>,
 }
 
+/// Forex quote market data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct ForexQuote {
     #[serde(rename = "52WeekHigh")]
     pub week_high_52: Option<Number>,
@@ -229,8 +251,10 @@ pub struct ForexQuote {
     pub trade_time: Option<i64>,
 }
 
+/// Futures quote market data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct FutureQuote {
     #[serde(rename = "askMICId")]
     pub ask_mic_id: Option<String>,
@@ -264,8 +288,10 @@ pub struct FutureQuote {
     pub trade_time: Option<i64>,
 }
 
+/// Futures option quote market data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct FutureOptionQuote {
     #[serde(rename = "askMICId")]
     pub ask_mic_id: Option<String>,
@@ -298,8 +324,10 @@ pub struct FutureOptionQuote {
     pub trade_time: Option<i64>,
 }
 
+/// Index quote market data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct IndexQuote {
     #[serde(rename = "52WeekHigh")]
     pub week_high_52: Option<Number>,
@@ -317,8 +345,10 @@ pub struct IndexQuote {
     pub trade_time: Option<i64>,
 }
 
+/// Mutual fund quote market data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct MutualFundQuote {
     #[serde(rename = "52WeekHigh")]
     pub week_high_52: Option<Number>,
@@ -338,8 +368,10 @@ pub struct MutualFundQuote {
 // Per-asset reference structs
 // ---------------------------------------------------------------------------
 
+/// Equity reference details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct EquityReference {
     pub cusip: Option<String>,
     pub description: Option<String>,
@@ -353,8 +385,10 @@ pub struct EquityReference {
     pub otc_market_tier: Option<String>,
 }
 
+/// Option contract reference details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OptionReference {
     pub contract_type: Option<ContractType>,
     pub cusip: Option<String>,
@@ -376,8 +410,10 @@ pub struct OptionReference {
     pub underlying: Option<String>,
 }
 
+/// Forex pair reference details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct ForexReference {
     pub description: Option<String>,
     pub exchange: Option<String>,
@@ -388,8 +424,10 @@ pub struct ForexReference {
     pub trading_hours: Option<String>,
 }
 
+/// Futures contract reference details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct FutureReference {
     pub description: Option<String>,
     pub exchange: Option<String>,
@@ -405,8 +443,10 @@ pub struct FutureReference {
     pub product: Option<String>,
 }
 
+/// Futures option contract reference details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct FutureOptionReference {
     pub contract_type: Option<ContractType>,
     pub description: Option<String>,
@@ -419,16 +459,20 @@ pub struct FutureOptionReference {
     pub underlying: Option<String>,
 }
 
+/// Index reference details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct IndexReference {
     pub description: Option<String>,
     pub exchange: Option<String>,
     pub exchange_name: Option<String>,
 }
 
+/// Mutual fund reference details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct MutualFundReference {
     pub cusip: Option<String>,
     pub description: Option<String>,
@@ -440,8 +484,10 @@ pub struct MutualFundReference {
 // Shared quote/market structs
 // ---------------------------------------------------------------------------
 
+/// Extended hours market data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct ExtendedMarket {
     pub ask_price: Option<Number>,
     pub ask_size: Option<i32>,
@@ -456,8 +502,10 @@ pub struct ExtendedMarket {
     pub trade_time: Option<i64>,
 }
 
+/// Regular session market data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct RegularMarket {
     pub regular_market_last_price: Option<Number>,
     pub regular_market_last_size: Option<i32>,
@@ -466,8 +514,10 @@ pub struct RegularMarket {
     pub regular_market_trade_time: Option<i64>,
 }
 
+/// Fundamental financial data for an equity.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Fundamental {
     pub avg_10_days_volume: Option<Number>,
     pub avg_1_year_volume: Option<Number>,
@@ -490,8 +540,10 @@ pub struct Fundamental {
 // QuoteError
 // ---------------------------------------------------------------------------
 
+/// Error details for a failed quote lookup.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct QuoteError {
     pub invalid_cusips: Option<Vec<String>>,
     #[serde(rename = "invalidSSIDs")]
@@ -503,8 +555,10 @@ pub struct QuoteError {
 // Option chain types
 // ---------------------------------------------------------------------------
 
+/// Option chain data for a symbol.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OptionChain {
     pub call_exp_date_map: Option<HashMap<String, HashMap<String, Vec<OptionContract>>>>,
     pub days_to_expiration: Option<Number>,
@@ -525,6 +579,7 @@ pub struct OptionChain {
 /// because the Schwab API frequently returns floats where the spec says integer.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OptionContract {
     pub ask_price: Option<Number>,
     pub ask_size: Option<Number>,
@@ -577,8 +632,10 @@ pub struct OptionContract {
     pub volatility: Option<Number>,
 }
 
+/// Option contract deliverable details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OptionDeliverables {
     pub asset_type: Option<String>,
     pub currency_type: Option<String>,
@@ -586,8 +643,10 @@ pub struct OptionDeliverables {
     pub symbol: Option<String>,
 }
 
+/// Underlying security data for an option chain.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Underlying {
     pub ask: Option<Number>,
     pub ask_size: Option<i32>,
@@ -614,15 +673,19 @@ pub struct Underlying {
     pub trade_time: Option<i64>,
 }
 
+/// Option expiration chain response.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct ExpirationChain {
     pub expiration_list: Option<Vec<Expiration>>,
     pub status: Option<String>,
 }
 
+/// Option expiration details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Expiration {
     pub days_to_expiration: Option<i32>,
     pub expiration: Option<String>,
@@ -636,8 +699,10 @@ pub struct Expiration {
 // Price history
 // ---------------------------------------------------------------------------
 
+/// List of price history candles.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct CandleList {
     pub candles: Option<Vec<Candle>>,
     pub empty: Option<bool>,
@@ -648,8 +713,10 @@ pub struct CandleList {
     pub symbol: Option<String>,
 }
 
+/// Single price history candle (OHLCV).
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Candle {
     pub close: Option<Number>,
     pub datetime: Option<i64>,
@@ -665,8 +732,10 @@ pub struct Candle {
 // Instruments
 // ---------------------------------------------------------------------------
 
+/// Instrument lookup response entry.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct InstrumentResponse {
     pub asset_type: Option<MarketType>,
     pub bond_factor: Option<String>,
@@ -682,8 +751,10 @@ pub struct InstrumentResponse {
     pub r#type: Option<MarketType>,
 }
 
+/// Instrument search result.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Instrument {
     pub asset_type: Option<MarketType>,
     pub cusip: Option<String>,
@@ -693,8 +764,10 @@ pub struct Instrument {
     pub r#type: Option<MarketType>,
 }
 
+/// Bond instrument details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Bond {
     pub asset_type: Option<MarketType>,
     pub bond_factor: Option<String>,
@@ -707,8 +780,10 @@ pub struct Bond {
     pub r#type: Option<MarketType>,
 }
 
+/// Instrument with fundamental data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct FundamentalInst {
     pub avg_10_days_volume: Option<i64>,
     pub avg_1_day_volume: Option<i64>,
@@ -782,6 +857,7 @@ pub struct FundamentalInst {
 /// Wrapper for the instruments search response.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct InstrumentsResponse {
     pub instruments: Option<Vec<InstrumentResponse>>,
 }
@@ -790,8 +866,10 @@ pub struct InstrumentsResponse {
 // Market hours
 // ---------------------------------------------------------------------------
 
+/// Market hours for a trading session.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Hours {
     pub category: Option<String>,
     pub date: Option<String>,
@@ -803,8 +881,10 @@ pub struct Hours {
     pub session_hours: Option<HashMap<String, Vec<Interval>>>,
 }
 
+/// Start and end times for a market session interval.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Interval {
     pub end: Option<String>,
     pub start: Option<String>,
@@ -814,8 +894,10 @@ pub struct Interval {
 // Movers
 // ---------------------------------------------------------------------------
 
+/// Market mover/screener result entry.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Screener {
     pub change: Option<Number>,
     pub description: Option<String>,
@@ -828,6 +910,7 @@ pub struct Screener {
 /// Wrapper for the movers/screener response.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct ScreenerResponse {
     pub screeners: Option<Vec<Screener>>,
 }

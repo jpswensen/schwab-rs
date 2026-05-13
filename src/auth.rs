@@ -63,6 +63,11 @@ impl std::fmt::Debug for AuthConfig {
 
 impl AuthConfig {
     /// Creates OAuth configuration for Schwab's production OAuth base URL.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::InvalidAuthConfig`] if any field is empty or the callback URL
+    /// is not on `127.0.0.1`.
     pub fn new(
         client_id: impl Into<String>,
         client_secret: impl Into<String>,
@@ -79,6 +84,10 @@ impl AuthConfig {
     }
 
     /// Overrides the OAuth base URL, primarily for tests and Schwab-compatible environments.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::InvalidAuthConfig`] if the resulting configuration is invalid.
     pub fn oauth_base_url(mut self, oauth_base_url: impl Into<String>) -> Result<Self> {
         self.oauth_base_url = oauth_base_url
             .into()
@@ -323,6 +332,10 @@ impl std::fmt::Debug for Provider {
 
 impl Provider {
     /// Creates a provider from an auth config and token store.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::InvalidAuthConfig`] if the auth configuration is invalid.
     pub fn new<S>(config: AuthConfig, store: S) -> Result<Self>
     where
         S: TokenStore + 'static,
@@ -331,6 +344,10 @@ impl Provider {
     }
 
     /// Creates a provider backed by a token file.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::InvalidAuthConfig`] if the auth configuration is invalid.
     pub fn from_token_file(config: AuthConfig, token_path: impl Into<PathBuf>) -> Result<Self> {
         Self::new(config, FileTokenStore::new(token_path))
     }
@@ -350,6 +367,12 @@ impl Provider {
     }
 
     /// Returns a valid access token, refreshing and persisting it when needed.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::AuthExpired`] if the refresh token has expired.
+    /// Returns an [`Error`] if the token store cannot be read, the refresh request
+    /// fails, or the refreshed token cannot be persisted.
     #[instrument(skip_all)]
     pub async fn token(&self) -> Result<String> {
         let _guard = self.refresh_lock.lock().await;
@@ -369,6 +392,12 @@ impl Provider {
     }
 
     /// Forces a refresh, persists the result, and returns the updated token file.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::AuthExpired`] if the refresh token has expired.
+    /// Returns an [`Error`] if the token store cannot be read, the refresh request
+    /// fails, or the refreshed token cannot be persisted.
     #[instrument(skip_all)]
     pub async fn refresh(&self) -> Result<TokenFile> {
         let _guard = self.refresh_lock.lock().await;
@@ -384,12 +413,20 @@ impl Provider {
     }
 
     /// Builds a regular API config from the current access token snapshot.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the access token cannot be obtained.
     #[instrument(skip_all)]
     pub async fn config(&self) -> Result<Config> {
         Ok(Config::new().bearer_token(self.token().await?))
     }
 
     /// Builds a regular API client from the current access token snapshot.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the access token cannot be obtained.
     #[instrument(skip_all)]
     pub async fn client(&self) -> Result<Client> {
         Ok(Client::new(self.config().await?))
@@ -406,6 +443,10 @@ impl Provider {
 }
 
 /// Builds a Schwab authorization URL and CSRF state for the browser flow.
+///
+/// # Errors
+///
+/// Returns [`crate::Error::InvalidAuthConfig`] if the auth configuration is invalid.
 pub fn authorize_url(config: &AuthConfig) -> Result<AuthContext> {
     authorize_url_with_state(config, &random_oauth_state()?)
 }
@@ -427,6 +468,11 @@ fn authorize_url_with_state(config: &AuthConfig, state: &str) -> Result<AuthCont
 }
 
 /// Exchanges an authorization code for an initial token file.
+///
+/// # Errors
+///
+/// Returns an [`Error`] if the code is empty, the token request fails, or the
+/// response cannot be decoded.
 #[instrument(skip_all)]
 pub async fn exchange_code(config: &AuthConfig, code: &str) -> Result<TokenFile> {
     exchange_code_with_client(config, code, &reqwest::Client::new()).await
@@ -537,6 +583,11 @@ pub fn parse_redirect_url(
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Errors
+///
+/// Returns [`crate::Error::AuthCallback`] if the redirect URL is malformed or fails
+/// the CSRF state check. Returns an [`Error`] if the token exchange fails.
 #[instrument(skip_all)]
 pub async fn exchange_redirect_url<S>(
     config: AuthConfig,
@@ -556,6 +607,11 @@ where
 }
 
 /// Refreshes a token file while preserving the original creation timestamp.
+///
+/// # Errors
+///
+/// Returns [`crate::Error::AuthExpired`] if the refresh token is missing or has expired.
+/// Returns an [`Error`] if the refresh request fails or the response cannot be decoded.
 #[instrument(skip_all)]
 pub async fn refresh_token_file(config: &AuthConfig, token_file: &TokenFile) -> Result<TokenFile> {
     refresh_token_file_with_client(config, token_file, &reqwest::Client::new()).await
@@ -628,6 +684,11 @@ async fn token_request(
 }
 
 /// Starts the full login flow and calls `url_handler` with the authorization URL.
+///
+/// # Errors
+///
+/// Returns an [`Error`] if the callback listener fails to start, `url_handler`
+/// returns an error, or the token exchange fails.
 #[instrument(skip_all)]
 pub async fn login<S, F>(config: AuthConfig, store: S, url_handler: F) -> Result<Provider>
 where
@@ -640,6 +701,11 @@ where
 }
 
 /// Starts the callback listener and returns a one-shot login session.
+///
+/// # Errors
+///
+/// Returns [`crate::Error::InvalidAuthConfig`] if the auth configuration is invalid.
+/// Returns [`crate::Error::AuthCallback`] if the callback listener fails to bind.
 pub fn start_login<S>(config: AuthConfig, store: S) -> Result<LoginSession>
 where
     S: TokenStore + 'static,
@@ -682,6 +748,12 @@ impl LoginSession {
     }
 
     /// Waits for the callback, exchanges the code, saves the token, and returns a provider.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::AuthCallback`] if the callback times out, the state does not
+    /// match, or the listener thread panics. Returns an [`Error`] if the token
+    /// exchange or persistence fails.
     #[instrument(skip_all)]
     pub async fn wait(self) -> Result<Provider> {
         let LoginSession {
