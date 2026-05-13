@@ -185,12 +185,11 @@ impl std::fmt::Debug for TokenData {
 
 impl TokenData {
     fn with_expires_at(mut self, now: i64) -> Self {
-        if self.expires_at.is_none() {
-            if let Some(expires_in) = self.expires_in {
-                if expires_in > 0 {
-                    self.expires_at = Some(now + expires_in);
-                }
-            }
+        if self.expires_at.is_none()
+            && let Some(expires_in) = self.expires_in
+            && expires_in > 0
+        {
+            self.expires_at = Some(now + expires_in);
         }
         self
     }
@@ -885,6 +884,9 @@ fn handle_callback_stream(
     tls_config: Arc<ServerConfig>,
     callback_path: &str,
 ) -> Result<CallbackResult> {
+    // The listener is non-blocking for cancellation support, but on macOS the
+    // accepted stream inherits that mode. TLS requires blocking I/O.
+    stream.set_nonblocking(false).map_err(Error::Io)?;
     stream
         .set_read_timeout(Some(Duration::from_secs(10)))
         .map_err(Error::Io)?;
