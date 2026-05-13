@@ -13,6 +13,13 @@ Wraps the Schwab Market Data and Trader REST APIs with typed methods and models 
 
 ## Quick start
 
+The crate is not published to crates.io yet. Add it from GitHub while the API is settling:
+
+```toml
+[dependencies]
+schwab = { git = "https://github.com/major/schwab-rs" }
+```
+
 ```rust
 use schwab::{Client, Config, QuoteOptions};
 
@@ -37,7 +44,44 @@ async fn main() -> schwab::Result<()> {
 }
 ```
 
-See `examples/auth.rs` for the full OAuth2 login flow.
+## Authentication
+
+Schwab requires OAuth2 with a browser approval step. For local development, set the app credentials in environment variables and run the auth example:
+
+```bash
+SCHWAB_CLIENT_ID='your-app-key' \
+SCHWAB_CLIENT_SECRET='your-app-secret' \
+SCHWAB_CALLBACK_URL='https://127.0.0.1:8182/callback' \
+SCHWAB_TOKEN_PATH='schwab-token.json' \
+cargo run --example auth
+```
+
+The auth example writes a token file that `Provider::from_token_file` can refresh and turn into a ready-to-use `Client`. See [`docs/auth.md`](docs/auth.md), [`examples/auth.rs`](examples/auth.rs), and [`examples/quotes.rs`](examples/quotes.rs) for the full flow.
+
+Do not commit Schwab client secrets, authorization codes, access tokens, refresh tokens, token files, or account data. Prefer environment variables or a secret manager for credentials, and see [`SECURITY.md`](SECURITY.md) for reporting and token-handling guidance.
+
+## Feature flags
+
+| Feature | Default | Purpose |
+|---|---:|---|
+| `decimal` | No | Enables `rust_decimal` support for models where decimal precision is preferable to floating-point values. |
+| `test_online` | No | Enables live integration tests that call the Schwab API. Use only with explicit credentials and never in untrusted CI. |
+
+Enable optional features with Cargo:
+
+```bash
+cargo test --features decimal
+```
+
+Run live tests only when you intentionally want network access:
+
+```bash
+cargo test --features test_online
+```
+
+## API stability
+
+`schwab-rs` is pre-1.0. Public APIs may change while the crate tracks Schwab API behavior and fills out coverage for Market Data and Trader endpoints. Pin an exact git revision for production use until a crates.io release and semver policy are published.
 
 ## Minimum supported Rust version
 

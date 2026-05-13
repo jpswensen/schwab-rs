@@ -1221,10 +1221,7 @@ mod tests {
         );
 
         let pre = &sessions["preMarket"];
-        assert_eq!(
-            pre[0].start,
-            Some("2022-04-14T07:00:00-04:00".to_string())
-        );
+        assert_eq!(pre[0].start, Some("2022-04-14T07:00:00-04:00".to_string()));
     }
 
     /// ScreenerResponse wrapper with two movers.

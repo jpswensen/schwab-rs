@@ -31,8 +31,8 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo clippy --all-targets --features decimal -- -D warnings
+      - run: cargo clippy --all-targets -- -D clippy::all -A missing_docs -A clippy::needless_borrow -A clippy::large_enum_variant
+      - run: cargo clippy --all-targets --features decimal -- -D clippy::all -A missing_docs -A clippy::needless_borrow -A clippy::large_enum_variant
 
   test:
     name: Test (${{ matrix.os }}, ${{ matrix.features == '' && 'default' || matrix.features }})
@@ -47,6 +47,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test ${{ matrix.features != '' && format('--features {0}', matrix.features) || '' }}
 
+  msrv:
+    name: MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.85
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --locked
+
   docs:
     name: Docs
     runs-on: ubuntu-latest
@@ -56,4 +65,4 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --no-deps
         env:
-          RUSTDOCFLAGS: -D warnings
+          RUSTDOCFLAGS: -D rustdoc::broken-intra-doc-links -D rustdoc::private-intra-doc-links

@@ -1130,7 +1130,10 @@ mod tests {
         assert_eq!(children[0].order_id, Some(100002));
         assert_eq!(children[0].status, Some(OrderStatus::AwaitingParentOrder));
         assert_eq!(children[0].duration, Some(Duration::GoodTillCancel));
-        assert_eq!(children[0].order_strategy_type, Some(OrderStrategyType::Single));
+        assert_eq!(
+            children[0].order_strategy_type,
+            Some(OrderStrategyType::Single)
+        );
         assert_eq!(children[0].price, Some(n(160.0)));
 
         let child_legs = children[0].order_leg_collection.as_ref().unwrap();
@@ -1292,10 +1295,7 @@ mod tests {
                 assert_eq!(boxed.asset_type, Some(InstrumentAssetType::Option));
                 assert_eq!(boxed.put_call, Some(OptionPutCall::Call));
                 assert_eq!(boxed.strike_price, Some(n(170.0)));
-                assert_eq!(
-                    boxed.expiration_date,
-                    Some("2024-01-19".to_string())
-                );
+                assert_eq!(boxed.expiration_date, Some("2024-01-19".to_string()));
                 assert_eq!(boxed.r#type, Some(OptionType::Vanilla));
                 assert_eq!(boxed.underlying_symbol, Some("AAPL".to_string()));
                 assert_eq!(boxed.underlying_cusip, Some("037833100".to_string()));

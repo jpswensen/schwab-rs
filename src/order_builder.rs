@@ -1,7 +1,9 @@
 use serde::Serialize;
 
-use crate::models::enums::{Duration, Instruction, InstrumentAssetType, OrderStrategyType, OrderTypeRequest, Session};
 use crate::models::Number;
+use crate::models::enums::{
+    Duration, Instruction, InstrumentAssetType, OrderStrategyType, OrderTypeRequest, Session,
+};
 
 /// Instrument description for order submission.
 ///
@@ -24,8 +26,8 @@ struct Leg {
 
 /// Convenience builder for constructing Schwab order payloads.
 ///
-/// Produces a [`Serialize`]-able value that [`Client::place_order`],
-/// [`Client::replace_order`], and [`Client::preview_order`] accept
+/// Produces a [`Serialize`]-able value that [`crate::Client::place_order`],
+/// [`crate::Client::replace_order`], and [`crate::Client::preview_order`] accept
 /// directly.
 ///
 /// Each constructor sets sensible defaults (`NORMAL` session, `DAY`
@@ -34,13 +36,16 @@ struct Leg {
 /// # Examples
 ///
 /// ```
-/// use schwab::{OrderBuilder, Instruction};
+/// use schwab::{Instruction, Number, OrderBuilder};
 ///
 /// // Market buy 10 shares of AAPL
-/// let order = OrderBuilder::equity_market("AAPL", Instruction::Buy, 10.0);
+/// let quantity: Number = "10".parse().unwrap();
+/// let order = OrderBuilder::equity_market("AAPL", Instruction::Buy, quantity);
 ///
 /// // Limit buy 5 shares of MSFT at $400, good-til-cancel
-/// let order = OrderBuilder::equity_limit("MSFT", Instruction::Buy, 5.0, 400.0)
+/// let quantity: Number = "5".parse().unwrap();
+/// let price: Number = "400".parse().unwrap();
+/// let order = OrderBuilder::equity_limit("MSFT", Instruction::Buy, quantity, price)
 ///     .duration(schwab::Duration::GoodTillCancel);
 /// ```
 #[derive(Clone, Debug, Serialize)]
@@ -64,7 +69,14 @@ impl OrderBuilder {
         instruction: Instruction,
         quantity: Number,
     ) -> Self {
-        Self::new(OrderTypeRequest::Market, symbol, instruction, quantity, None, None)
+        Self::new(
+            OrderTypeRequest::Market,
+            symbol,
+            instruction,
+            quantity,
+            None,
+            None,
+        )
     }
 
     /// Build a `LIMIT` order for a single equity leg.
@@ -74,7 +86,14 @@ impl OrderBuilder {
         quantity: Number,
         price: Number,
     ) -> Self {
-        Self::new(OrderTypeRequest::Limit, symbol, instruction, quantity, Some(price), None)
+        Self::new(
+            OrderTypeRequest::Limit,
+            symbol,
+            instruction,
+            quantity,
+            Some(price),
+            None,
+        )
     }
 
     /// Build a `STOP` order for a single equity leg.
@@ -84,7 +103,14 @@ impl OrderBuilder {
         quantity: Number,
         stop_price: Number,
     ) -> Self {
-        Self::new(OrderTypeRequest::Stop, symbol, instruction, quantity, None, Some(stop_price))
+        Self::new(
+            OrderTypeRequest::Stop,
+            symbol,
+            instruction,
+            quantity,
+            None,
+            Some(stop_price),
+        )
     }
 
     /// Build a `STOP_LIMIT` order for a single equity leg.
@@ -154,11 +180,22 @@ impl OrderBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::n;
+
+    #[cfg(not(feature = "decimal"))]
+    fn expected_number(value: f64) -> serde_json::Value {
+        serde_json::json!(value)
+    }
+
+    #[cfg(feature = "decimal")]
+    fn expected_number(value: f64) -> serde_json::Value {
+        serde_json::json!(n(value).to_string())
+    }
 
     /// Market order serializes with required fields and no price.
     #[test]
     fn market_order_json() {
-        let order = OrderBuilder::equity_market("AAPL", Instruction::Buy, 10.0);
+        let order = OrderBuilder::equity_market("AAPL", Instruction::Buy, n(10.0));
         let json: serde_json::Value = serde_json::to_value(&order).unwrap();
 
         assert_eq!(json["orderType"], "MARKET");
@@ -171,7 +208,7 @@ mod tests {
         let legs = json["orderLegCollection"].as_array().unwrap();
         assert_eq!(legs.len(), 1);
         assert_eq!(legs[0]["instruction"], "BUY");
-        assert_eq!(legs[0]["quantity"], 10.0);
+        assert_eq!(legs[0]["quantity"], expected_number(10.0));
         assert_eq!(legs[0]["instrument"]["symbol"], "AAPL");
         assert_eq!(legs[0]["instrument"]["assetType"], "EQUITY");
     }
@@ -179,42 +216,46 @@ mod tests {
     /// Limit order includes price and omits stopPrice.
     #[test]
     fn limit_order_json() {
-        let order = OrderBuilder::equity_limit("MSFT", Instruction::Sell, 5.0, 400.50);
+        let order = OrderBuilder::equity_limit("MSFT", Instruction::Sell, n(5.0), n(400.50));
         let json: serde_json::Value = serde_json::to_value(&order).unwrap();
 
         assert_eq!(json["orderType"], "LIMIT");
-        assert_eq!(json["price"], 400.50);
+        assert_eq!(json["price"], expected_number(400.50));
         assert!(json.get("stopPrice").is_none());
         assert_eq!(json["orderLegCollection"][0]["instruction"], "SELL");
-        assert_eq!(json["orderLegCollection"][0]["quantity"], 5.0);
+        assert_eq!(
+            json["orderLegCollection"][0]["quantity"],
+            expected_number(5.0)
+        );
     }
 
     /// Stop order includes stopPrice and omits price.
     #[test]
     fn stop_order_json() {
-        let order = OrderBuilder::equity_stop("GOOG", Instruction::Sell, 3.0, 150.0);
+        let order = OrderBuilder::equity_stop("GOOG", Instruction::Sell, n(3.0), n(150.0));
         let json: serde_json::Value = serde_json::to_value(&order).unwrap();
 
         assert_eq!(json["orderType"], "STOP");
-        assert_eq!(json["stopPrice"], 150.0);
+        assert_eq!(json["stopPrice"], expected_number(150.0));
         assert!(json.get("price").is_none());
     }
 
     /// Stop-limit order includes both price and stopPrice.
     #[test]
     fn stop_limit_order_json() {
-        let order = OrderBuilder::equity_stop_limit("TSLA", Instruction::Buy, 2.0, 200.0, 195.0);
+        let order =
+            OrderBuilder::equity_stop_limit("TSLA", Instruction::Buy, n(2.0), n(200.0), n(195.0));
         let json: serde_json::Value = serde_json::to_value(&order).unwrap();
 
         assert_eq!(json["orderType"], "STOP_LIMIT");
-        assert_eq!(json["price"], 200.0);
-        assert_eq!(json["stopPrice"], 195.0);
+        assert_eq!(json["price"], expected_number(200.0));
+        assert_eq!(json["stopPrice"], expected_number(195.0));
     }
 
     /// Fluent setters override defaults.
     #[test]
     fn fluent_setters() {
-        let order = OrderBuilder::equity_market("SPY", Instruction::Buy, 1.0)
+        let order = OrderBuilder::equity_market("SPY", Instruction::Buy, n(1.0))
             .session(Session::Am)
             .duration(Duration::GoodTillCancel)
             .order_strategy_type(OrderStrategyType::Trigger);

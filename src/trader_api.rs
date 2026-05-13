@@ -3,8 +3,10 @@ use serde::Serialize;
 use tracing::instrument;
 
 use crate::client::ApiBase;
+use crate::models::trader::{
+    Account, AccountNumberHash, Order, PreviewOrder, Transaction, UserPreference,
+};
 use crate::query::{push_optional, required_text};
-use crate::models::trader::{Account, AccountNumberHash, Order, PreviewOrder, Transaction, UserPreference};
 use crate::{Client, Error, OrderListOptions, OrderResponse, Result, TransactionListOptions};
 
 impl Client {
@@ -81,11 +83,7 @@ impl Client {
 
     /// Fetches one order with `GET /accounts/{accountNumber}/orders/{orderId}`.
     #[instrument(skip_all)]
-    pub async fn get_order(
-        &self,
-        account_number: impl AsRef<str>,
-        order_id: i64,
-    ) -> Result<Order> {
+    pub async fn get_order(&self, account_number: impl AsRef<str>, order_id: i64) -> Result<Order> {
         let account_number = required_text("accountNumber", account_number.as_ref())?;
         let order_id = order_id.to_string();
         let url = self.endpoint_url(
@@ -136,7 +134,12 @@ impl Client {
             ApiBase::Trader,
             &["accounts", &account_number, "previewOrder"],
         )?;
-        self.send_json(Method::POST, url, &[], Some(serde_json::to_value(order).map_err(Error::Encode)?))
+        self.send_json(
+            Method::POST,
+            url,
+            &[],
+            Some(serde_json::to_value(order).map_err(Error::Encode)?),
+        )
         .await
     }
 

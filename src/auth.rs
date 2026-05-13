@@ -458,7 +458,7 @@ async fn exchange_code_with_client(
 
 /// Extracts an authorization code and CSRF state from a redirect URL.
 ///
-/// This is the headless counterpart to [`CallbackServer`]. After calling
+/// This is the headless counterpart to `CallbackServer`. After calling
 /// [`authorize_url`], direct the user to open the authorization URL in a
 /// browser. When Schwab redirects, the localhost callback server will not be
 /// running, so the browser shows an error, but the address bar contains the
@@ -467,10 +467,12 @@ async fn exchange_code_with_client(
 /// Returns an error if the URL is malformed, carries an OAuth error, is
 /// missing the `code` or `state` parameters, or the `state` does not match
 /// the [`AuthContext`] (CSRF check).
-pub fn parse_redirect_url(auth_context: &AuthContext, redirect_url: &str) -> Result<CallbackResult> {
-    let url = reqwest::Url::parse(redirect_url.trim()).map_err(|error| {
-        Error::AuthCallback(format!("invalid redirect URL: {error}"))
-    })?;
+pub fn parse_redirect_url(
+    auth_context: &AuthContext,
+    redirect_url: &str,
+) -> Result<CallbackResult> {
+    let url = reqwest::Url::parse(redirect_url.trim())
+        .map_err(|error| Error::AuthCallback(format!("invalid redirect URL: {error}")))?;
     let mut code = None;
     let mut state = None;
     let mut oauth_error = None;
@@ -1002,11 +1004,7 @@ fn http_response(status: &str, body: &str) -> String {
 }
 
 fn redacted(value: &str) -> &'static str {
-    if value.is_empty() {
-        ""
-    } else {
-        "<redacted>"
-    }
+    if value.is_empty() { "" } else { "<redacted>" }
 }
 
 fn private_file(path: &Path) -> Result<File> {
@@ -1416,5 +1414,4 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         listener.local_addr().unwrap().port()
     }
-
 }

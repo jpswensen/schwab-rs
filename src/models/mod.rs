@@ -9,7 +9,7 @@ pub use trader::*;
 /// Numeric type for financial values.
 ///
 /// Defaults to [`f64`]. Enable the `decimal` crate feature to switch to
-/// [`rust_decimal::Decimal`], which avoids floating-point rounding in
+/// `rust_decimal::Decimal`, which avoids floating-point rounding in
 /// financial calculations.
 #[cfg(not(feature = "decimal"))]
 pub type Number = f64;
