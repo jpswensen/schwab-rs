@@ -9,7 +9,12 @@ pub enum Error {
     EmptyBaseUrl,
     /// The configured base URL could not be parsed as a URL.
     #[error("invalid base URL {base_url:?}: {message}")]
-    InvalidBaseUrl { base_url: String, message: String },
+    InvalidBaseUrl {
+        /// The URL string that failed to parse.
+        base_url: String,
+        /// A human-readable description of why parsing failed.
+        message: String,
+    },
     /// The caller tried to request quotes without any non-empty symbols.
     #[error("at least one symbol is required")]
     EmptySymbols,
@@ -19,7 +24,9 @@ pub enum Error {
     /// The configured Schwab OAuth setting is invalid.
     #[error("invalid auth config {field}: {message}")]
     InvalidAuthConfig {
+        /// The configuration field that is invalid.
         field: &'static str,
+        /// A human-readable description of the validation failure.
         message: String,
     },
     /// Schwab authentication must be completed before an access token is available.
@@ -42,7 +49,12 @@ pub enum Error {
     Json(#[source] serde_json::Error),
     /// Schwab returned a non-success HTTP status.
     #[error("Schwab API returned HTTP {status}")]
-    HttpStatus { status: u16, body: String },
+    HttpStatus {
+        /// The HTTP status code returned by Schwab.
+        status: u16,
+        /// The response body, truncated for safety.
+        body: String,
+    },
     /// The HTTP request failed before a response body could be decoded.
     #[error("HTTP request failed: {0}")]
     Request(#[source] reqwest::Error),
