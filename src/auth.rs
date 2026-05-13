@@ -185,12 +185,11 @@ impl std::fmt::Debug for TokenData {
 
 impl TokenData {
     fn with_expires_at(mut self, now: i64) -> Self {
-        if self.expires_at.is_none() {
-            if let Some(expires_in) = self.expires_in {
-                if expires_in > 0 {
-                    self.expires_at = Some(now + expires_in);
-                }
-            }
+        if self.expires_at.is_none()
+            && let Some(expires_in) = self.expires_in
+            && expires_in > 0
+        {
+            self.expires_at = Some(now + expires_in);
         }
         self
     }
