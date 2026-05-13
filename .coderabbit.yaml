@@ -1,0 +1,121 @@
+# CodeRabbit Configuration for schwab-rs
+# Docs: https://docs.coderabbit.ai/configuration/
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: en-US
+tone_instructions: >
+  You are a brilliant but world-weary senior developer who has seen too much.
+  Deliver feedback with dry wit and gentle sarcasm, but always be helpful.
+  Use programming puns when the opportunity arises.
+
+reviews:
+  profile: chill
+  collapse_walkthrough: false
+  poem: false
+  request_changes_workflow: true
+  high_level_summary: false
+  high_level_summary_placeholder: "@coderabbitai summary"
+  abort_on_close: true
+  review_status: true
+  suggested_labels: false
+  suggested_reviewers: false
+  in_progress_fortune: false
+
+  pre_merge_checks:
+    title:
+      mode: "off"
+    docstrings:
+      mode: "off"
+    description:
+      mode: warning
+
+  auto_review:
+    # Keep automatic reviews off so maintainers can request CodeRabbit manually when quota is available.
+    enabled: false
+    drafts: false
+    auto_pause_after_reviewed_commits: 0
+    base_branches:
+      - main
+    ignore_title_keywords:
+      - "WIP"
+      - "[WIP]"
+      - "DO NOT MERGE"
+
+  path_filters:
+    - "!**/target/**"
+    - "!.sisyphus/**"
+
+  path_instructions:
+    - path: "src/**/*.rs"
+      instructions: |
+        Library API review:
+        - Public types, traits, and functions should have clear doc comments
+        - Config uses a builder pattern with Config::new() and chained methods like .bearer_token(), .base_url(), .http_client()
+        - Public methods should be async and return schwab::Result<T>
+        - Request paths, query parameters, serde field attributes, and response structs must match Schwab API documentation
+        - Preserve typed errors via thiserror so callers can match with downcast or pattern matching
+        - Keep account hashes, tokens, and credentials out of logs, errors, tests, and docs
+        - Don't nitpick style because rustfmt and clippy handle formatting and lint
+
+    - path: "src/market_data_api.rs"
+      instructions: |
+        Market Data API review:
+        - Verify quote, option chain, price history, movers, market hours, and instruments methods match documented endpoints
+        - Default base URL should remain https://api.schwabapi.com/marketdata/v1 unless tests override it
+        - API errors should preserve the typed error contract via SchwabApiError
+        - Required query parameters should be validated before sending requests
+        - Response structs should expose typed fields for common payloads
+
+    - path: "src/trader_api.rs"
+      instructions: |
+        Trader API review:
+        - Verify account, order, transaction, and user preference paths use account hashes and numeric IDs accurately
+        - Account-scoped paths use encrypted account hashes, not plain account numbers, and path segments must be URL-encoded
+        - Default base URL should remain https://api.schwabapi.com/trader/v1 unless tests override it
+        - API errors should preserve the typed error contract
+        - Order placement, replacement, cancellation, and preview payloads should not silently mutate caller data
+        - Never expose credentials, tokens, or account hashes in error messages beyond the caller-provided request context
+
+    - path: "src/config.rs"
+      instructions: |
+        Config review:
+        - Keep client configuration explicit through builder methods on Config
+        - Do not add hidden environment variable reads or config-file reads
+        - Callers pass bearer tokens with .bearer_token() or dynamic token sources with .token_provider()
+
+    - path: "src/error.rs"
+      instructions: |
+        Error handling review:
+        - Preserve typed API errors for caller matching via thiserror
+        - Include status code and response body context where useful without leaking secrets
+        - Use error wrapping where it improves caller diagnostics
+
+    - path: "tests/**/*.rs"
+      instructions: |
+        Focus on test quality:
+        - Use standard assert!, assert_eq!, assert_ne! macros and #[should_panic] where appropriate
+        - Mock HTTP with mockito and validate request methods, paths, query parameters, and headers
+        - Prefer descriptive test function names that explain the scenario
+        - Don't nitpick coverage percentages
+
+    - path: ".github/workflows/**"
+      instructions: "Validate workflow syntax and security, including minimum permissions and pinned actions."
+
+    - path: "Makefile"
+      instructions: |
+        Makefile validation:
+        - .PHONY declarations for all non-file targets
+        - Build targets should run cargo clippy and cargo test because this is a library
+        - Avoid flags that are already defaults
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: global
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "guidelines.md"
+      - "**/AGENTS.md"
