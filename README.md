@@ -4,6 +4,9 @@ Rust client library for the [Schwab API](https://developer.schwab.com/).
 
 Wraps the Schwab Market Data and Trader REST APIs with typed methods and models so callers don't need to build URLs or parse raw JSON.
 
+> [!IMPORTANT]
+> `schwab-rs` is an unofficial project. It is not affiliated with, endorsed by, or sponsored by Charles Schwab & Co., Inc., Schwab brokerage services, or thinkorswim.
+
 ## Features
 
 - **Market Data** - quotes, option chains, expiration chains, instruments, market hours, movers, price history

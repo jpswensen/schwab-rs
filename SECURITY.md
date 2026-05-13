@@ -1,5 +1,7 @@
 # Security Policy
 
+`schwab-rs` is an unofficial project. It is not affiliated with, endorsed by, or sponsored by Charles Schwab & Co., Inc., Schwab brokerage services, or thinkorswim.
+
 ## Supported versions
 
 This crate is pre-1.0. Security fixes are expected to land on the `main` branch until the first public release defines a longer-term support policy.

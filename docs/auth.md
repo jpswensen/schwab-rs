@@ -2,6 +2,9 @@
 
 Schwab requires a user to approve access in a browser, then redirects back to a localhost callback URL. The Rust auth module implements that flow without making the main API client own refresh state.
 
+> [!IMPORTANT]
+> `schwab-rs` is an unofficial project. It is not affiliated with, endorsed by, or sponsored by Charles Schwab & Co., Inc., Schwab brokerage services, or thinkorswim.
+
 ## Flow
 
 1. Register a Schwab callback URL like `https://127.0.0.1:8182/callback`.

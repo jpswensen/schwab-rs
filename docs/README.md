@@ -2,6 +2,9 @@
 
 This directory keeps the Schwab OpenAPI files beside the Rust crate so the generated or handwritten client code can be reviewed against the API contract.
 
+> [!IMPORTANT]
+> `schwab-rs` is an unofficial project. It is not affiliated with, endorsed by, or sponsored by Charles Schwab & Co., Inc., Schwab brokerage services, or thinkorswim.
+
 | File | Purpose |
 |---|---|
 | `market_data.openapi.json` | Market Data API contract, including quotes, price history, instruments, market hours, movers, and option chains. |

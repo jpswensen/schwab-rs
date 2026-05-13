@@ -3,6 +3,10 @@
 
 //! Rust client library for the Schwab API.
 //!
+//! `schwab-rs` is an unofficial project. It is not affiliated with,
+//! endorsed by, or sponsored by Charles Schwab & Co., Inc., Schwab brokerage
+//! services, or thinkorswim.
+//!
 //! The OpenAPI files in `docs/` describe the Schwab HTTP API. This crate exposes
 //! small client methods like `get_quotes(...)` instead of forcing callers to
 //! build raw URLs and parse raw JSON.
