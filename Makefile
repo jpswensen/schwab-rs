@@ -1,4 +1,4 @@
-.PHONY: audit check clippy doc fmt fmt-fix test
+.PHONY: audit check clippy coverage doc fmt fmt-fix test
 
 CLIPPY_FLAGS := -D clippy::all -A missing_docs -A clippy::needless_borrow -A clippy::large_enum_variant
 RUSTDOCFLAGS := -D rustdoc::broken-intra-doc-links -D rustdoc::private-intra-doc-links
@@ -21,6 +21,9 @@ test:
 
 doc:
 	RUSTDOCFLAGS="$(RUSTDOCFLAGS)" cargo doc --no-deps
+
+coverage:
+	cargo llvm-cov test --fail-under-lines 90
 
 audit:
 	cargo audit

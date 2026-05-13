@@ -152,4 +152,103 @@ mod tests {
         assert!(StdError::source(&encode_error).is_some());
         assert!(StdError::source(&Error::EmptyBaseUrl).is_none());
     }
+
+    #[test]
+    fn debug_impl_covers_all_variants() {
+        let serde_err = serde_json::from_str::<serde_json::Value>("{").unwrap_err();
+        let serde_err2 = serde_json::from_str::<serde_json::Value>("{").unwrap_err();
+        let serde_err3 = serde_json::from_str::<serde_json::Value>("{").unwrap_err();
+        let serde_err4 = serde_json::from_str::<serde_json::Value>("{").unwrap_err();
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "gone");
+
+        let variants: Vec<Error> = vec![
+            Error::EmptyBaseUrl,
+            Error::InvalidBaseUrl {
+                base_url: "bad".into(),
+                message: "nope".into(),
+            },
+            Error::EmptySymbols,
+            Error::MissingRequiredParameter("cusip"),
+            Error::InvalidAuthConfig {
+                field: "client_id",
+                message: "empty".into(),
+            },
+            Error::AuthRequired,
+            Error::AuthExpired,
+            Error::AuthCallback("timeout".into()),
+            Error::Io(io_err),
+            Error::Encode(serde_err),
+            Error::Json(serde_err2),
+            Error::HttpStatus {
+                status: 401,
+                body: "secret data".into(),
+            },
+            // Request variant tested in client::tests (requires async + network).
+            Error::Decode {
+                source: serde_err3,
+                body: "raw payload".into(),
+            },
+        ];
+
+        let debug_strings: Vec<String> = variants.iter().map(|v| format!("{v:?}")).collect();
+
+        assert_eq!(debug_strings[0], "EmptyBaseUrl");
+        assert!(debug_strings[1].contains("InvalidBaseUrl"));
+        assert_eq!(debug_strings[2], "EmptySymbols");
+        assert!(debug_strings[3].contains("MissingRequiredParameter"));
+        assert!(debug_strings[4].contains("InvalidAuthConfig"));
+        assert_eq!(debug_strings[5], "AuthRequired");
+        assert_eq!(debug_strings[6], "AuthExpired");
+        assert!(debug_strings[7].contains("AuthCallback"));
+        assert!(debug_strings[8].contains("Io"));
+        assert!(debug_strings[9].contains("Encode"));
+        assert!(debug_strings[10].contains("Json"));
+        // HttpStatus body is redacted
+        assert!(debug_strings[11].contains("<redacted>"));
+        assert!(!debug_strings[11].contains("secret data"));
+        // Decode body is redacted
+        assert!(debug_strings[12].contains("<redacted>"));
+        assert!(!debug_strings[12].contains("raw payload"));
+
+        // Also verify Display for remaining untested variants
+        assert_eq!(
+            Error::InvalidAuthConfig {
+                field: "client_id",
+                message: "empty".into(),
+            }
+            .to_string(),
+            "invalid auth config client_id: empty"
+        );
+        assert_eq!(
+            Error::AuthRequired.to_string(),
+            "Schwab authentication is required"
+        );
+        assert_eq!(
+            Error::AuthExpired.to_string(),
+            "Schwab authentication is expired"
+        );
+        assert!(
+            Error::AuthCallback("oops".into())
+                .to_string()
+                .contains("oops")
+        );
+        assert!(
+            Error::Io(std::io::Error::other("disk"))
+                .to_string()
+                .contains("disk")
+        );
+        assert!(
+            Error::Json(serde_err4)
+                .to_string()
+                .starts_with("failed to decode Schwab auth JSON:")
+        );
+        assert!(
+            Error::Decode {
+                source: serde_json::from_str::<serde_json::Value>("{").unwrap_err(),
+                body: "x".into(),
+            }
+            .to_string()
+            .starts_with("failed to decode Schwab response:")
+        );
+    }
 }

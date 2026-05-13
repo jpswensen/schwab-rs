@@ -191,6 +191,9 @@ mod tests {
                 .starts_with("HTTP request failed:")
         );
         assert!(StdError::source(&request_error).is_some());
+        // Exercise Debug impl for Request variant
+        let debug = format!("{request_error:?}");
+        assert!(debug.starts_with("Request("));
     }
 
     #[tokio::test]
