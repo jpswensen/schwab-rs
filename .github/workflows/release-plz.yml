@@ -10,6 +10,7 @@ jobs:
   release-pr:
     name: Release PR
     runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       contents: write
       pull-requests: write

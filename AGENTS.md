@@ -74,7 +74,7 @@ Runs on Ubuntu, macOS, Windows:
 - `docs` (stable, Ubuntu)
 - `audit` (daily cron + on Cargo.toml/Cargo.lock changes)
 
-Release: `release-plz` runs on every push to `main` (+ manual `workflow_dispatch` fallback). `release-pr` updates the release PR with changelog and version bump, then `release` creates the GitHub release, tag, and crates.io publication when a version bump landed. The release workflow requires `CARGO_REGISTRY_TOKEN` in repository secrets.
+Release: `release-plz` runs on every push to `main` (+ manual `workflow_dispatch` fallback). `release-pr` updates the release PR with changelog and version bump, then `release` creates the GitHub release, tag, and crates.io publication when a version bump landed. The release workflow requires `CARGO_REGISTRY_TOKEN` in repository secrets. The `release-pr` job is non-blocking so direct release bumps can still publish when repository settings prevent GitHub Actions from creating pull requests.
 
 ## Review Instructions
 
