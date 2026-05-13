@@ -885,6 +885,9 @@ fn handle_callback_stream(
     tls_config: Arc<ServerConfig>,
     callback_path: &str,
 ) -> Result<CallbackResult> {
+    // The listener is non-blocking for cancellation support, but on macOS the
+    // accepted stream inherits that mode. TLS requires blocking I/O.
+    stream.set_nonblocking(false).map_err(Error::Io)?;
     stream
         .set_read_timeout(Some(Duration::from_secs(10)))
         .map_err(Error::Io)?;
