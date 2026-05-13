@@ -9,6 +9,7 @@ use super::enums::*;
 
 /// Response metadata returned by order placement and replacement endpoints.
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[allow(missing_docs)]
 pub struct OrderResponse {
     /// Raw `Location` header returned by Schwab.
     pub location: Option<String>,
@@ -35,8 +36,10 @@ impl OrderResponse {
 // Service Error
 // ---------------------------------------------------------------------------
 
+/// API error response from the trader service.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct ServiceError {
     pub errors: Option<Vec<String>>,
     pub message: Option<String>,
@@ -46,8 +49,10 @@ pub struct ServiceError {
 // Account types
 // ---------------------------------------------------------------------------
 
+/// Account wrapper containing securities account data.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Account {
     pub securities_account: Option<SecuritiesAccount>,
 }
@@ -55,6 +60,7 @@ pub struct Account {
 /// Discriminated by the `type` field: `"MARGIN"` or `"CASH"`.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(tag = "type")]
+#[allow(missing_docs)]
 pub enum SecuritiesAccount {
     #[serde(rename = "MARGIN")]
     Margin(MarginAccount),
@@ -65,6 +71,7 @@ pub enum SecuritiesAccount {
 /// allOf SecuritiesAccountBase + margin-specific balances.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct MarginAccount {
     // Inlined from SecuritiesAccountBase
     pub account_number: Option<String>,
@@ -84,6 +91,7 @@ pub struct MarginAccount {
 /// allOf SecuritiesAccountBase + cash-specific balances.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct CashAccount {
     // Inlined from SecuritiesAccountBase
     pub account_number: Option<String>,
@@ -100,8 +108,10 @@ pub struct CashAccount {
     pub projected_balances: Option<CashBalance>,
 }
 
+/// Current margin account balance details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct MarginBalance {
     pub available_funds: Option<Number>,
     pub available_funds_non_marginable_trade: Option<Number>,
@@ -124,8 +134,10 @@ pub struct MarginBalance {
     pub stock_buying_power: Option<Number>,
 }
 
+/// Current cash account balance details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct CashBalance {
     pub cash_available_for_trading: Option<Number>,
     pub cash_available_for_withdrawal: Option<Number>,
@@ -136,8 +148,10 @@ pub struct CashBalance {
     pub unsettled_cash: Option<Number>,
 }
 
+/// Initial margin account balance at start of day.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct MarginInitialBalance {
     pub account_value: Option<Number>,
     pub accrued_interest: Option<Number>,
@@ -174,8 +188,10 @@ pub struct MarginInitialBalance {
     pub unsettled_cash: Option<Number>,
 }
 
+/// Initial cash account balance at start of day.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct CashInitialBalance {
     pub account_value: Option<Number>,
     pub accrued_interest: Option<Number>,
@@ -206,6 +222,7 @@ pub struct CashInitialBalance {
 /// Check `asset_type` on the deserialized struct to identify the kind.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(untagged)]
+#[allow(missing_docs)]
 pub enum AccountsInstrument {
     Option(AccountOption),
     FixedIncome(AccountFixedIncome),
@@ -217,6 +234,7 @@ pub enum AccountsInstrument {
 /// allOf AccountsBaseInstrument (no extra fields).
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct AccountEquity {
     pub asset_type: Option<InstrumentAssetType>,
     pub cusip: Option<String>,
@@ -229,6 +247,7 @@ pub struct AccountEquity {
 /// allOf AccountsBaseInstrument + fixed-income fields.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct AccountFixedIncome {
     // Inlined from AccountsBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -246,6 +265,7 @@ pub struct AccountFixedIncome {
 /// allOf AccountsBaseInstrument (no extra fields).
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct AccountMutualFund {
     pub asset_type: Option<InstrumentAssetType>,
     pub cusip: Option<String>,
@@ -258,6 +278,7 @@ pub struct AccountMutualFund {
 /// allOf AccountsBaseInstrument + option fields.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct AccountOption {
     // Inlined from AccountsBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -278,6 +299,7 @@ pub struct AccountOption {
 /// allOf AccountsBaseInstrument + cash-equivalent type.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct AccountCashEquivalent {
     // Inlined from AccountsBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -291,8 +313,10 @@ pub struct AccountCashEquivalent {
     pub r#type: Option<CashEquivalentType>,
 }
 
+/// Option deliverable details for account positions.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct AccountApiOptionDeliverable {
     pub api_currency_type: Option<ApiCurrencyType>,
     pub asset_type: Option<AssetType>,
@@ -304,8 +328,10 @@ pub struct AccountApiOptionDeliverable {
 // Position & AccountNumberHash
 // ---------------------------------------------------------------------------
 
+/// Securities position in an account.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Position {
     pub aged_quantity: Option<Number>,
     pub average_long_price: Option<Number>,
@@ -329,8 +355,10 @@ pub struct Position {
     pub tax_lot_average_short_price: Option<Number>,
 }
 
+/// Account number with associated hash value.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct AccountNumberHash {
     pub account_number: Option<String>,
     pub hash_value: Option<String>,
@@ -344,6 +372,7 @@ pub struct AccountNumberHash {
 /// contain `Vec<Order>`.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Order {
     pub account_number: Option<i64>,
     pub activation_price: Option<Number>,
@@ -387,6 +416,7 @@ pub struct Order {
 /// `replacing_order_collection` contain `Vec<OrderRequest>`.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OrderRequest {
     pub account_number: Option<i64>,
     pub activation_price: Option<Number>,
@@ -424,8 +454,10 @@ pub struct OrderRequest {
     pub tax_lot_method: Option<TaxLotMethod>,
 }
 
+/// Individual leg of a multi-leg order.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OrderLegCollection {
     pub div_cap_gains: Option<DividendCapitalGains>,
     pub instruction: Option<Instruction>,
@@ -438,8 +470,10 @@ pub struct OrderLegCollection {
     pub to_symbol: Option<String>,
 }
 
+/// Execution activity for an order.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OrderActivity {
     pub activity_type: Option<OrderActivityType>,
     pub execution_legs: Option<Vec<ExecutionLeg>>,
@@ -448,8 +482,10 @@ pub struct OrderActivity {
     pub quantity: Option<Number>,
 }
 
+/// Single execution leg with price and quantity.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct ExecutionLeg {
     pub instrument_id: Option<i64>,
     pub leg_id: Option<i64>,
@@ -463,8 +499,10 @@ pub struct ExecutionLeg {
 // Preview Order & supporting types
 // ---------------------------------------------------------------------------
 
+/// Order preview response before submission.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct PreviewOrder {
     pub commission_and_fee: Option<CommissionAndFee>,
     pub order_id: Option<i64>,
@@ -472,8 +510,10 @@ pub struct PreviewOrder {
     pub order_validation_result: Option<OrderValidationResult>,
 }
 
+/// Child order strategy in a conditional order.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OrderStrategy {
     pub account_number: Option<String>,
     pub advanced_order_type: Option<AdvancedOrderType>,
@@ -500,8 +540,10 @@ pub struct OrderStrategy {
     pub strategy: Option<ComplexOrderStrategyType>,
 }
 
+/// Balance impact details for an order preview.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OrderBalance {
     pub order_value: Option<Number>,
     pub projected_available_fund: Option<Number>,
@@ -509,8 +551,10 @@ pub struct OrderBalance {
     pub projected_commission: Option<Number>,
 }
 
+/// Order leg details in an order preview.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OrderLeg {
     pub ask_price: Option<Number>,
     pub asset_type: Option<AssetType>,
@@ -524,8 +568,10 @@ pub struct OrderLeg {
     pub quantity: Option<Number>,
 }
 
+/// Validation result for an order preview.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OrderValidationResult {
     pub accepts: Option<Vec<OrderValidationDetail>>,
     pub alerts: Option<Vec<OrderValidationDetail>>,
@@ -534,8 +580,10 @@ pub struct OrderValidationResult {
     pub warns: Option<Vec<OrderValidationDetail>>,
 }
 
+/// Individual validation message for an order.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct OrderValidationDetail {
     pub activity_message: Option<String>,
     pub message: Option<String>,
@@ -549,48 +597,62 @@ pub struct OrderValidationDetail {
 // Commission & Fee types
 // ---------------------------------------------------------------------------
 
+/// Combined commission and fee summary.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct CommissionAndFee {
     pub commission: Option<Commission>,
     pub fee: Option<Fees>,
     pub true_commission: Option<Commission>,
 }
 
+/// Commission breakdown for an order.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Commission {
     pub commission_legs: Option<Vec<CommissionLeg>>,
 }
 
+/// Commission details for a single order leg.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct CommissionLeg {
     pub commission_values: Option<Vec<CommissionValue>>,
 }
 
+/// Commission amount and fee type.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct CommissionValue {
     #[serde(rename = "type")]
     pub r#type: Option<FeeType>,
     pub value: Option<Number>,
 }
 
+/// Fee breakdown for an order.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Fees {
     pub fee_legs: Option<Vec<FeeLeg>>,
 }
 
+/// Fee details for a single order leg.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct FeeLeg {
     pub fee_values: Option<Vec<FeeValue>>,
 }
 
+/// Fee amount and fee type.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct FeeValue {
     #[serde(rename = "type")]
     pub r#type: Option<FeeType>,
@@ -601,8 +663,10 @@ pub struct FeeValue {
 // Transaction types
 // ---------------------------------------------------------------------------
 
+/// Account transaction record.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Transaction {
     pub account_number: Option<String>,
     pub activity_id: Option<i64>,
@@ -622,8 +686,10 @@ pub struct Transaction {
     pub user: Option<UserDetails>,
 }
 
+/// Transfer details within a transaction.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransferItem {
     pub amount: Option<Number>,
     pub cost: Option<Number>,
@@ -633,8 +699,10 @@ pub struct TransferItem {
     pub price: Option<Number>,
 }
 
+/// User information associated with a transaction.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct UserDetails {
     pub broker_rep_code: Option<String>,
     pub cd_domain_id: Option<String>,
@@ -658,6 +726,7 @@ pub struct UserDetails {
 /// `TransactionOption.deliverable`.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(untagged)]
+#[allow(missing_docs)]
 pub enum TransactionInstrument {
     Option(Box<TransactionOption>),
     MutualFund(TransactionMutualFund),
@@ -675,6 +744,7 @@ pub enum TransactionInstrument {
 /// allOf TransactionBaseInstrument + equity type.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionEquity {
     // Inlined from TransactionBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -692,6 +762,7 @@ pub struct TransactionEquity {
 /// Contains a recursive `deliverable` field of type `TransactionInstrument`.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionOption {
     // Inlined from TransactionBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -716,6 +787,7 @@ pub struct TransactionOption {
 /// allOf TransactionBaseInstrument + fixed-income fields.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionFixedIncome {
     // Inlined from TransactionBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -736,6 +808,7 @@ pub struct TransactionFixedIncome {
 /// allOf TransactionBaseInstrument + cash-equivalent type.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionCashEquivalent {
     // Inlined from TransactionBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -752,6 +825,7 @@ pub struct TransactionCashEquivalent {
 /// allOf TransactionBaseInstrument + mutual-fund fields.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionMutualFund {
     // Inlined from TransactionBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -774,6 +848,7 @@ pub struct TransactionMutualFund {
 /// allOf TransactionBaseInstrument + collective-investment type.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionCollectiveInvestment {
     // Inlined from TransactionBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -790,6 +865,7 @@ pub struct TransactionCollectiveInvestment {
 /// allOf TransactionBaseInstrument (no extra fields).
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionCurrency {
     pub asset_type: Option<InstrumentAssetType>,
     pub cusip: Option<String>,
@@ -802,6 +878,7 @@ pub struct TransactionCurrency {
 /// allOf TransactionBaseInstrument + forex fields.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionForex {
     // Inlined from TransactionBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -820,6 +897,7 @@ pub struct TransactionForex {
 /// allOf TransactionBaseInstrument + future fields.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionFuture {
     // Inlined from TransactionBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -841,6 +919,7 @@ pub struct TransactionFuture {
 /// allOf TransactionBaseInstrument + index fields.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionIndex {
     // Inlined from TransactionBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -858,6 +937,7 @@ pub struct TransactionIndex {
 /// allOf TransactionBaseInstrument + product type.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionProduct {
     // Inlined from TransactionBaseInstrument
     pub asset_type: Option<InstrumentAssetType>,
@@ -871,8 +951,10 @@ pub struct TransactionProduct {
     pub r#type: Option<ProductType>,
 }
 
+/// Option deliverable details in a transaction.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct TransactionApiOptionDeliverable {
     pub asset_type: Option<AssetType>,
     pub deliverable: Option<TransactionInstrument>,
@@ -886,16 +968,20 @@ pub struct TransactionApiOptionDeliverable {
 // User Preferences
 // ---------------------------------------------------------------------------
 
+/// User preferences and streaming configuration.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct UserPreference {
     pub accounts: Option<Vec<UserPreferenceAccount>>,
     pub offers: Option<Vec<Offer>>,
     pub streamer_info: Option<Vec<StreamerInfo>>,
 }
 
+/// Account preferences within user settings.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct UserPreferenceAccount {
     pub account_color: Option<String>,
     pub account_number: Option<String>,
@@ -907,15 +993,19 @@ pub struct UserPreferenceAccount {
     pub r#type: Option<String>,
 }
 
+/// Available offer or promotion.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct Offer {
     pub level_2_permissions: Option<bool>,
     pub mkt_data_permission: Option<String>,
 }
 
+/// Streaming service connection details.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct StreamerInfo {
     pub schwab_client_channel: Option<String>,
     pub schwab_client_correl_id: Option<String>,
@@ -928,8 +1018,10 @@ pub struct StreamerInfo {
 // Misc
 // ---------------------------------------------------------------------------
 
+/// Date parameter serialized as epoch milliseconds.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(missing_docs)]
 pub struct DateParam {
     pub date: Option<String>,
 }

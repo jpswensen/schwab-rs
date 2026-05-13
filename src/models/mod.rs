@@ -1,5 +1,8 @@
+/// Enumeration types shared across market data and trader APIs.
 pub mod enums;
+/// Market data response types for quotes, option chains, candles, and instruments.
 pub mod market_data;
+/// Trader response types for accounts, orders, transactions, and user preferences.
 pub mod trader;
 
 pub use enums::*;

@@ -2,9 +2,11 @@ use serde::{Deserialize, Serialize};
 
 // --- Market Data Enums ---
 
+/// Primary asset classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum AssetMainType {
     Bond,
     Equity,
@@ -16,9 +18,11 @@ pub enum AssetMainType {
     Option,
 }
 
+/// Market data quote type classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum MarketType {
     Bond,
     Equity,
@@ -35,8 +39,10 @@ pub enum MarketType {
     Unknown,
 }
 
+/// Option contract type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ContractType {
     #[serde(rename = "P")]
     Put,
@@ -44,8 +50,10 @@ pub enum ContractType {
     Call,
 }
 
+/// Equity asset subtype classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum EquityAssetSubType {
     #[serde(rename = "COE")]
     CommonEquity,
@@ -69,8 +77,10 @@ pub enum EquityAssetSubType {
     Right,
 }
 
+/// Market data error status.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum MarketErrorStatus {
     #[serde(rename = "400")]
     BadRequest,
@@ -82,8 +92,10 @@ pub enum MarketErrorStatus {
     InternalServerError,
 }
 
+/// Option exercise style.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ExerciseType {
     #[serde(rename = "A")]
     American,
@@ -91,8 +103,10 @@ pub enum ExerciseType {
     European,
 }
 
+/// Option expiration schedule type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ExpirationType {
     #[serde(rename = "M")]
     Monthly,
@@ -104,8 +118,10 @@ pub enum ExpirationType {
     Weekly,
 }
 
+/// Fund investment strategy.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum FundStrategy {
     #[serde(rename = "A")]
     Active,
@@ -119,18 +135,22 @@ pub enum FundStrategy {
     Short,
 }
 
+/// Mutual fund asset subtype classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum MutualFundAssetSubType {
     Oef,
     Cef,
     Mmf,
 }
 
+/// Option chain strategy classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum OptionStrategy {
     Single,
     Analytical,
@@ -146,32 +166,40 @@ pub enum OptionStrategy {
     Roll,
 }
 
+/// Put or call indicator.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum PutCall {
     Put,
     Call,
 }
 
+/// Quote feed type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum QuoteType {
     Nbbo,
     Nfl,
 }
 
+/// Price movement direction.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum Direction {
     Up,
     Down,
 }
 
+/// Option settlement timing.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum SettlementType {
     #[serde(rename = "A")]
     Am,
@@ -179,9 +207,11 @@ pub enum SettlementType {
     Pm,
 }
 
+/// Exchange identifier.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ExchangeName {
     Ind,
     Ase,
@@ -193,9 +223,11 @@ pub enum ExchangeName {
     Bats,
 }
 
+/// Market type for market hours queries.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum MarketDataMarket {
     Equity,
     Option,
@@ -204,9 +236,11 @@ pub enum MarketDataMarket {
     Forex,
 }
 
+/// Mover index or symbol group.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum MoverSymbol {
     #[serde(rename = "$DJI")]
     Dji,
@@ -224,27 +258,33 @@ pub enum MoverSymbol {
     OptionCall,
 }
 
+/// Option contract filter type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum OptionContractType {
     Call,
     Put,
     All,
 }
 
+/// Market data entitlement classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum Entitlement {
     Pn,
     Np,
     Pp,
 }
 
+/// Option expiration month filter.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ExpirationMonth {
     Jan,
     Feb,
@@ -261,9 +301,11 @@ pub enum ExpirationMonth {
     All,
 }
 
+/// Mover sort criterion.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum Sort {
     Volume,
     Trades,
@@ -271,9 +313,11 @@ pub enum Sort {
     PercentChangeDown,
 }
 
+/// Price history candle frequency unit.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum FrequencyType {
     Minute,
     Daily,
@@ -281,9 +325,11 @@ pub enum FrequencyType {
     Monthly,
 }
 
+/// Price history lookback period unit.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum PeriodType {
     Day,
     Month,
@@ -291,8 +337,10 @@ pub enum PeriodType {
     Ytd,
 }
 
+/// Instrument search projection type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum Projection {
     #[serde(rename = "symbol-search")]
     SymbolSearch,
@@ -310,9 +358,11 @@ pub enum Projection {
 
 // --- Trader API Enums ---
 
+/// API rule action outcome.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ApiRuleAction {
     Accept,
     Alert,
@@ -321,9 +371,11 @@ pub enum ApiRuleAction {
     Unknown,
 }
 
+/// Currency type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ApiCurrencyType {
     Usd,
     Cad,
@@ -331,9 +383,11 @@ pub enum ApiCurrencyType {
     Jpy,
 }
 
+/// Cash equivalent instrument type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum CashEquivalentType {
     SweepVehicle,
     Savings,
@@ -341,18 +395,22 @@ pub enum CashEquivalentType {
     Unknown,
 }
 
+/// Option put or call indicator.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum OptionPutCall {
     Put,
     Call,
     Unknown,
 }
 
+/// Option instrument type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum OptionType {
     Vanilla,
     Binary,
@@ -360,9 +418,11 @@ pub enum OptionType {
     Unknown,
 }
 
+/// Instrument asset classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum InstrumentAssetType {
     Equity,
     Option,
@@ -374,9 +434,11 @@ pub enum InstrumentAssetType {
     CollectiveInvestment,
 }
 
+/// Collective investment instrument type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum CollectiveInvestmentType {
     UnitInvestmentTrust,
     ExchangeTradedFund,
@@ -385,9 +447,11 @@ pub enum CollectiveInvestmentType {
     Units,
 }
 
+/// Fee classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum FeeType {
     Commission,
     SecFee,
@@ -416,58 +480,72 @@ pub enum FeeType {
     Unknown,
 }
 
+/// Forex instrument type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ForexType {
     Standard,
     Nbbo,
     Unknown,
 }
 
+/// Future instrument type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum FutureType {
     Standard,
     Unknown,
 }
 
+/// Index classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum IndexType {
     BroadBased,
     NarrowBased,
     Unknown,
 }
 
+/// Order activity classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum OrderActivityType {
     Execution,
     OrderAction,
 }
 
+/// Order execution activity type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ExecutionType {
     Fill,
 }
 
+/// Dividend and capital gains handling method.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum DividendCapitalGains {
     Reinvest,
     Payout,
 }
 
+/// Position opening or closing effect.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum PositionEffect {
     Opening,
     Closing,
@@ -475,18 +553,22 @@ pub enum PositionEffect {
     Unknown,
 }
 
+/// Order quantity unit.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum QuantityType {
     AllShares,
     Dollars,
     Shares,
 }
 
+/// Advanced order strategy type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum AdvancedOrderType {
     None,
     Oto,
@@ -501,25 +583,31 @@ pub enum AdvancedOrderType {
     Pair,
 }
 
+/// Product instrument type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ProductType {
     Tbd,
     Unknown,
 }
 
+/// Securities account type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum SecuritiesAccountType {
     Cash,
     Margin,
 }
 
+/// Transaction activity classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum TransactionActivityType {
     ActivityCorrection,
     Execution,
@@ -528,9 +616,11 @@ pub enum TransactionActivityType {
     Unknown,
 }
 
+/// Transaction lifecycle status.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum TransactionStatus {
     Valid,
     Invalid,
@@ -538,9 +628,11 @@ pub enum TransactionStatus {
     Unknown,
 }
 
+/// Account sub-ledger classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum SubAccount {
     Cash,
     Margin,
@@ -550,9 +642,11 @@ pub enum SubAccount {
     Unknown,
 }
 
+/// Transaction equity instrument type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum TransactionEquityType {
     CommonStock,
     PreferredStock,
@@ -569,9 +663,11 @@ pub enum TransactionEquityType {
     Unknown,
 }
 
+/// Transaction fixed income instrument type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum TransactionFixedIncomeType {
     BondUnit,
     CertificateOfDeposit,
@@ -594,9 +690,11 @@ pub enum TransactionFixedIncomeType {
     Unknown,
 }
 
+/// Transaction mutual fund instrument type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum TransactionMutualFundType {
     NotApplicable,
     OpenEndNonTaxable,
@@ -606,9 +704,11 @@ pub enum TransactionMutualFundType {
     Unknown,
 }
 
+/// Transaction classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum TransactionType {
     Trade,
     ReceiveAndDeliver,
@@ -627,9 +727,11 @@ pub enum TransactionType {
     SmaAdjustment,
 }
 
+/// User classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum UserType {
     AdvisorUser,
     BrokerUser,
@@ -638,9 +740,11 @@ pub enum UserType {
     Unknown,
 }
 
+/// Amount unit indicator.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum AmountIndicator {
     Dollars,
     Shares,
@@ -649,9 +753,11 @@ pub enum AmountIndicator {
     Unknown,
 }
 
+/// Order lifecycle status.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum OrderStatus {
     AwaitingParentOrder,
     AwaitingCondition,
@@ -676,9 +782,11 @@ pub enum OrderStatus {
     Unknown,
 }
 
+/// Trader asset classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum AssetType {
     Equity,
     MutualFund,
@@ -693,9 +801,11 @@ pub enum AssetType {
     CollectiveInvestment,
 }
 
+/// Complex order strategy classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum ComplexOrderStrategyType {
     None,
     Covered,
@@ -720,9 +830,11 @@ pub enum ComplexOrderStrategyType {
     Custom,
 }
 
+/// Order time-in-force duration.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum Duration {
     Day,
     GoodTillCancel,
@@ -734,9 +846,11 @@ pub enum Duration {
     Unknown,
 }
 
+/// Order instruction (buy, sell, etc.).
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum Instruction {
     Buy,
     Sell,
@@ -750,9 +864,11 @@ pub enum Instruction {
     SellShortExempt,
 }
 
+/// Order strategy classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum OrderStrategyType {
     Single,
     Cancel,
@@ -765,9 +881,11 @@ pub enum OrderStrategyType {
     Trigger,
 }
 
+/// Order type classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum OrderType {
     Market,
     Limit,
@@ -786,9 +904,11 @@ pub enum OrderType {
     Unknown,
 }
 
+/// Order request type classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum OrderTypeRequest {
     Market,
     Limit,
@@ -806,9 +926,11 @@ pub enum OrderTypeRequest {
     LimitOnClose,
 }
 
+/// Order price link reference basis.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum PriceLinkBasis {
     Manual,
     Base,
@@ -821,18 +943,22 @@ pub enum PriceLinkBasis {
     Average,
 }
 
+/// Order price link adjustment type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum PriceLinkType {
     Value,
     Percent,
     Tick,
 }
 
+/// Order routing destination.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum RequestedDestination {
     Inet,
     EcnArca,
@@ -848,9 +974,11 @@ pub enum RequestedDestination {
     Auto,
 }
 
+/// Trading session classification.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum Session {
     Normal,
     Am,
@@ -858,9 +986,11 @@ pub enum Session {
     Seamless,
 }
 
+/// Order settlement instruction.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum SettlementInstruction {
     Regular,
     Cash,
@@ -868,18 +998,22 @@ pub enum SettlementInstruction {
     Unknown,
 }
 
+/// Order special handling instruction.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum SpecialInstruction {
     AllOrNone,
     DoNotReduce,
     AllOrNoneDoNotReduce,
 }
 
+/// Stop price link reference basis.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum StopPriceLinkBasis {
     Manual,
     Base,
@@ -892,18 +1026,22 @@ pub enum StopPriceLinkBasis {
     Average,
 }
 
+/// Stop price link adjustment type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum StopPriceLinkType {
     Value,
     Percent,
     Tick,
 }
 
+/// Stop trigger price type.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum StopType {
     Standard,
     Bid,
@@ -912,9 +1050,11 @@ pub enum StopType {
     Mark,
 }
 
+/// Tax lot selection method.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
+#[allow(missing_docs)]
 pub enum TaxLotMethod {
     Fifo,
     Lifo,
