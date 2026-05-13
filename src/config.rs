@@ -43,12 +43,22 @@ impl Config {
     }
 
     /// Overrides the Market Data base URL.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::EmptyBaseUrl`] if the URL is empty or
+    /// [`Error::InvalidBaseUrl`] if it cannot be parsed.
     pub fn base_url(mut self, base_url: impl Into<String>) -> Result<Self> {
         self.market_data_base_url = normalize_base_url(base_url)?;
         Ok(self)
     }
 
     /// Overrides the Trader API base URL.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::EmptyBaseUrl`] if the URL is empty or
+    /// [`Error::InvalidBaseUrl`] if it cannot be parsed.
     pub fn trader_base_url(mut self, base_url: impl Into<String>) -> Result<Self> {
         self.trader_base_url = normalize_base_url(base_url)?;
         Ok(self)

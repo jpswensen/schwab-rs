@@ -17,6 +17,11 @@ use crate::{
 
 impl Client {
     /// Fetches quotes for a list of symbols.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::EmptySymbols`] if all provided symbols are empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_quotes<S>(&self, symbols: impl IntoIterator<Item = S>) -> Result<Quotes>
     where
@@ -27,6 +32,11 @@ impl Client {
     }
 
     /// Fetches quotes with optional OpenAPI query parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::EmptySymbols`] if all provided symbols are empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_quotes_with_options<S>(
         &self,
@@ -47,6 +57,11 @@ impl Client {
     }
 
     /// Fetches the single-symbol quote endpoint from `GET /{symbol_id}/quotes`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingRequiredParameter`] if `symbol_id` is empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_quote(
         &self,
@@ -61,6 +76,11 @@ impl Client {
     }
 
     /// Fetches an option chain from `GET /chains`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingRequiredParameter`] if the symbol is empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_option_chain(&self, options: OptionChainOptions) -> Result<OptionChain> {
         required_text("symbol", &options.symbol)?;
@@ -70,6 +90,11 @@ impl Client {
     }
 
     /// Fetches option expirations from `GET /expirationchain`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingRequiredParameter`] if `symbol` is empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_expiration_chain(&self, symbol: impl AsRef<str>) -> Result<ExpirationChain> {
         let symbol = required_text("symbol", symbol.as_ref())?;
@@ -79,6 +104,11 @@ impl Client {
     }
 
     /// Searches instruments from `GET /instruments`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingRequiredParameter`] if `symbol` or `projection` is empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_instruments(
         &self,
@@ -101,6 +131,11 @@ impl Client {
     }
 
     /// Fetches a single instrument from `GET /instruments/{cusip_id}`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingRequiredParameter`] if `cusip_id` is empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_instrument_by_cusip(
         &self,
@@ -112,6 +147,11 @@ impl Client {
     }
 
     /// Fetches market hours from `GET /markets`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingRequiredParameter`] if all market values are empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_market_hours<S>(
         &self,
@@ -129,6 +169,11 @@ impl Client {
     }
 
     /// Fetches market hours from `GET /markets/{market_id}`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingRequiredParameter`] if `market_id` is empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_market_hour(
         &self,
@@ -143,6 +188,11 @@ impl Client {
     }
 
     /// Fetches market movers from `GET /movers/{symbol_id}`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingRequiredParameter`] if `symbol_id` is empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_movers(
         &self,
@@ -156,6 +206,11 @@ impl Client {
     }
 
     /// Fetches price history from `GET /pricehistory`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingRequiredParameter`] if `symbol` is empty.
+    /// Returns an [`Error`] if the request fails or the response cannot be decoded.
     #[instrument(skip_all)]
     pub async fn get_price_history(
         &self,
