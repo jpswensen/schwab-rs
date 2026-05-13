@@ -5,6 +5,11 @@
   ],
   "packageRules": [
     {
+      "description": "Library crate: keep existing version ranges instead of pinning with =",
+      "matchManagers": ["cargo"],
+      "rangeStrategy": "replace"
+    },
+    {
       "description": "Auto-merge patch, minor, and digest updates",
       "matchUpdateTypes": [
         "patch",
