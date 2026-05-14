@@ -74,7 +74,19 @@ Runs on Ubuntu, macOS, Windows:
 - `docs` (stable, Ubuntu)
 - `audit` (daily cron + on Cargo.toml/Cargo.lock changes)
 
-Release: `release-plz` runs on every push to `main` (+ manual `workflow_dispatch` fallback). `release-pr` updates the release PR with changelog and version bump, then `release` creates the GitHub release, tag, and crates.io publication when a version bump landed. The release workflow requires `CARGO_REGISTRY_TOKEN` in repository secrets. The `release-pr` job is non-blocking so direct release bumps can still publish when repository settings prevent GitHub Actions from creating pull requests.
+Release: `release-plz` runs on every push to `main` (+ manual `workflow_dispatch` fallback). `release-pr` updates the release PR with changelog and version bump, then `release` creates the GitHub release, tag, and crates.io publication when a version bump landed. The release workflow uses crates.io Trusted Publishing with GitHub Actions OIDC (`id-token: write`) instead of `CARGO_REGISTRY_TOKEN`. Configure the crates.io Trusted Publisher with workflow filename `release-plz.yml` (from `.github/workflows/release-plz.yml`). crates.io requires the first release of a brand-new crate to be published manually with a token that has `publish-new` scope before Trusted Publishing can be configured for subsequent releases. The `release-pr` job is non-blocking so direct release bumps can still publish when repository settings prevent GitHub Actions from creating pull requests.
+
+### Manual Release Checklist
+
+Since repository settings block `release-pr` from creating PRs, version bumps are manual:
+
+1. Bump `version` in `Cargo.toml`
+2. Run `cargo update --workspace` to sync `Cargo.lock`
+3. Commit **both** `Cargo.toml` and `Cargo.lock` together (dirty `Cargo.lock` causes `cargo publish` to fail)
+4. Push to `main` - release-plz creates the GitHub release, git tag, and publishes to crates.io
+5. Verify the release at `https://crates.io/crates/schwab`
+
+`CHANGELOG.md` is managed by release-plz. Update it in the same commit as the version bump, or let release-plz handle it via the release PR workflow if that becomes available.
 
 ## Review Instructions
 
@@ -85,6 +97,7 @@ Detailed file-specific review instructions live in `.github/instructions/`. The 
 When the code or project structure changes, keep these files updated to match:
 
 - `AGENTS.md` (this file), `src/AGENTS.md`, `src/models/AGENTS.md` - AI agent context
+- `CHANGELOG.md` - managed by release-plz, but verify it reflects release content
 - `README.md` - user-facing usage docs and feature descriptions
 - `.coderabbit.yaml` - automated review configuration
 - `.github/copilot-instructions.md` and `.github/instructions/*.instructions.md` - review policies
