@@ -41,9 +41,15 @@ mod config;
 mod error;
 mod market_data_api;
 mod models;
+// The options module shadows the `options` submodule inside models::streaming
+// that is pulled into the public namespace by `pub use models::*`; the shadow
+// is intentional and the re-export is still accessible as MoverOptions etc.
+#[allow(hidden_glob_reexports)]
 mod options;
 mod order_builder;
 mod query;
+mod stream_session;
+mod streaming_api;
 mod trader_api;
 
 pub use client::Client;
@@ -55,6 +61,7 @@ pub use options::{
     TransactionListOptions,
 };
 pub use order_builder::OrderBuilder;
+pub use stream_session::StreamingSession;
 
 #[cfg(test)]
 mod test_support;
