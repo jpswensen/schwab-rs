@@ -6,10 +6,11 @@ use tokio::sync::{Mutex, broadcast, mpsc, oneshot};
 
 use crate::models::streaming::{
     ChartEquity, ChartFutures, LevelOneEquity, LevelOneForex, LevelOneFutures,
-    LevelOneFuturesOption, LevelOneOption, StreamData, StreamEvent, StreamResponse,
-    chart_equity::ChartEquityField, chart_futures::ChartFuturesField, equities::EquityField,
-    forex::ForexField, futures::FuturesField, futures_options::FuturesOptionField,
-    options::OptionField,
+    LevelOneFuturesOption, LevelOneOption, ScreenerEquity, ScreenerOption, StreamData, StreamEvent,
+    StreamResponse, chart_equity::ChartEquityField, chart_futures::ChartFuturesField,
+    equities::EquityField, forex::ForexField, futures::FuturesField,
+    futures_options::FuturesOptionField, options::OptionField,
+    screener_equity::ScreenerEquityField, screener_option::ScreenerOptionField,
 };
 use crate::stream_session::protocol::ParsedMessage;
 use crate::stream_session::transport::WsTransport;
@@ -416,6 +417,86 @@ impl StreamingSession {
             .await
     }
 
+    /// Subscribe to equity screener data for the given keys.
+    ///
+    /// Screener keys follow the format `(PREFIX)_(SORTFIELD)_(FREQUENCY)`.
+    /// For example, `NASDAQ_VOLUME_0` returns NASDAQ stocks sorted by volume
+    /// for the full day.
+    ///
+    /// # Errors
+    /// Returns [`crate::Error::EmptySymbols`] if `keys` is empty.
+    /// Returns [`crate::Error::StreamProtocol`] if no fields are provided, the
+    /// command cannot be serialized, or the session command loop is stopped.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> schwab::Result<()> {
+    /// use schwab::{Client, Config, ScreenerEquityField};
+    ///
+    /// let client = Client::new(Config::new().bearer_token("your-token"));
+    /// let session = client.stream().await?;
+    /// session.subscribe_screener_equity(
+    ///     &["NASDAQ_VOLUME_0"],
+    ///     &[ScreenerEquityField::Symbol, ScreenerEquityField::Items],
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[tracing::instrument(skip_all)]
+    pub async fn subscribe_screener_equity(
+        &self,
+        keys: &[&str],
+        fields: &[ScreenerEquityField],
+    ) -> crate::Result<()> {
+        let field_indices = fields
+            .iter()
+            .map(ScreenerEquityField::index)
+            .collect::<Vec<_>>();
+        self.subscribe_service("9", "SCREENER_EQUITY", keys, field_indices)
+            .await
+    }
+
+    /// Subscribe to option screener data for the given keys.
+    ///
+    /// Screener keys follow the format `(PREFIX)_(SORTFIELD)_(FREQUENCY)`.
+    /// For example, `OPTION_CALL_VOLUME_0` returns call options sorted by
+    /// volume for the full day.
+    ///
+    /// # Errors
+    /// Returns [`crate::Error::EmptySymbols`] if `keys` is empty.
+    /// Returns [`crate::Error::StreamProtocol`] if no fields are provided, the
+    /// command cannot be serialized, or the session command loop is stopped.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> schwab::Result<()> {
+    /// use schwab::{Client, Config, ScreenerOptionField};
+    ///
+    /// let client = Client::new(Config::new().bearer_token("your-token"));
+    /// let session = client.stream().await?;
+    /// session.subscribe_screener_option(
+    ///     &["OPTION_CALL_VOLUME_0"],
+    ///     &[ScreenerOptionField::Symbol, ScreenerOptionField::Items],
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[tracing::instrument(skip_all)]
+    pub async fn subscribe_screener_option(
+        &self,
+        keys: &[&str],
+        fields: &[ScreenerOptionField],
+    ) -> crate::Result<()> {
+        let field_indices = fields
+            .iter()
+            .map(ScreenerOptionField::index)
+            .collect::<Vec<_>>();
+        self.subscribe_service("10", "SCREENER_OPTION", keys, field_indices)
+            .await
+    }
+
     async fn subscribe_service(
         &self,
         request_id: &str,
@@ -736,6 +817,14 @@ fn parse_data_message(data_message: protocol::StreamDataMessage) -> Option<Strea
             &content,
             ChartFutures::from_value,
         ))),
+        "SCREENER_EQUITY" => Some(StreamData::ScreenerEquities(parse_items(
+            &content,
+            ScreenerEquity::from_value,
+        ))),
+        "SCREENER_OPTION" => Some(StreamData::ScreenerOptions(parse_items(
+            &content,
+            ScreenerOption::from_value,
+        ))),
         other => {
             tracing::warn!("unknown streaming service: {other}");
             None
@@ -867,6 +956,7 @@ mod tests {
     use crate::{
         models::streaming::{
             chart_equity::ChartEquityField, chart_futures::ChartFuturesField, options::OptionField,
+            screener_equity::ScreenerEquityField, screener_option::ScreenerOptionField,
         },
         test_support::{fixture, n},
     };
@@ -1244,5 +1334,142 @@ mod tests {
         assert_eq!(item["service"], "CHART_FUTURES");
         assert_eq!(item["command"], "SUBS");
         assert_eq!(item["parameters"]["fields"], "2,5");
+    }
+
+    #[tokio::test]
+    async fn session_receives_screener_equity_data() {
+        let transport = MockTransport::new(vec![
+            Ok(Some(fixture("streaming_login_success.json"))),
+            Ok(Some(fixture("streaming_screener_equity_data.json"))),
+        ]);
+        let session = StreamingSession::new(transport, credentials())
+            .await
+            .unwrap();
+        let mut events = session.subscribe();
+
+        let StreamEvent::Data(StreamData::ScreenerEquities(screeners)) =
+            next_event(&mut events).await
+        else {
+            panic!("expected screener equity data event");
+        };
+
+        assert_eq!(screeners.len(), 1);
+        assert_eq!(screeners[0].key.as_deref(), Some("NASDAQ_VOLUME_0"));
+        assert_eq!(screeners[0].symbol.as_deref(), Some("NASDAQ_VOLUME_0"));
+        assert_eq!(screeners[0].sort_field.as_deref(), Some("VOLUME"));
+        let items = screeners[0].items.as_ref().expect("should have items");
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].symbol.as_deref(), Some("NVDA"));
+        assert_eq!(items[0].last_price, Some(n(120.5)));
+        assert_eq!(items[0].total_volume, Some(85000000));
+    }
+
+    #[tokio::test]
+    async fn session_receives_screener_option_data() {
+        let transport = MockTransport::new(vec![
+            Ok(Some(fixture("streaming_login_success.json"))),
+            Ok(Some(fixture("streaming_screener_option_data.json"))),
+        ]);
+        let session = StreamingSession::new(transport, credentials())
+            .await
+            .unwrap();
+        let mut events = session.subscribe();
+
+        let StreamEvent::Data(StreamData::ScreenerOptions(screeners)) =
+            next_event(&mut events).await
+        else {
+            panic!("expected screener option data event");
+        };
+
+        assert_eq!(screeners.len(), 1);
+        assert_eq!(screeners[0].key.as_deref(), Some("OPTION_CALL_VOLUME_0"));
+        let items = screeners[0].items.as_ref().expect("should have items");
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].symbol.as_deref(), Some("AAPL  251219C00200000"));
+        assert_eq!(items[0].last_price, Some(n(5.5)));
+    }
+
+    #[test]
+    fn parse_screener_equity_data_message_maps_fields() {
+        let mut messages =
+            protocol::parse_message(&fixture("streaming_screener_equity_data.json")).unwrap();
+        let ParsedMessage::Data(data) = messages.pop().unwrap() else {
+            panic!("expected data message");
+        };
+
+        let Some(StreamData::ScreenerEquities(screeners)) = parse_data_message(data) else {
+            panic!("expected parsed screener equities");
+        };
+
+        assert_eq!(screeners[0].timestamp, Some(1234567890000));
+        let items = screeners[0].items.as_ref().expect("should have items");
+        assert_eq!(items[0].net_change, Some(n(3.75)));
+        assert_eq!(items[0].trades, Some(150000));
+    }
+
+    #[test]
+    fn parse_screener_option_data_message_maps_fields() {
+        let mut messages =
+            protocol::parse_message(&fixture("streaming_screener_option_data.json")).unwrap();
+        let ParsedMessage::Data(data) = messages.pop().unwrap() else {
+            panic!("expected data message");
+        };
+
+        let Some(StreamData::ScreenerOptions(screeners)) = parse_data_message(data) else {
+            panic!("expected parsed screener options");
+        };
+
+        assert_eq!(screeners[0].frequency, Some(0));
+        let items = screeners[0].items.as_ref().expect("should have items");
+        assert_eq!(items[0].net_percent_change, Some(n(15.789)));
+        assert_eq!(items[0].volume, Some(8000));
+    }
+
+    #[tokio::test]
+    async fn session_subscribe_screener_equity_sends_subs_command() {
+        let transport = MockTransport::new(vec![Ok(Some(fixture("streaming_login_success.json")))]);
+        let sent = transport.sent_handle();
+        let session = StreamingSession::new(transport, credentials())
+            .await
+            .unwrap();
+
+        session
+            .subscribe_screener_equity(
+                &["NASDAQ_VOLUME_0"],
+                &[ScreenerEquityField::Symbol, ScreenerEquityField::Items],
+            )
+            .await
+            .unwrap();
+        let sent = sent.lock().await;
+        let subscribe: serde_json::Value = serde_json::from_str(&sent[1]).unwrap();
+        let item = &subscribe["requests"][0];
+
+        assert_eq!(item["service"], "SCREENER_EQUITY");
+        assert_eq!(item["command"], "SUBS");
+        assert_eq!(item["parameters"]["fields"], "0,4");
+    }
+
+    #[tokio::test]
+    async fn session_subscribe_screener_option_sends_subs_command() {
+        let transport = MockTransport::new(vec![Ok(Some(fixture("streaming_login_success.json")))]);
+        let sent = transport.sent_handle();
+        let session = StreamingSession::new(transport, credentials())
+            .await
+            .unwrap();
+
+        session
+            .subscribe_screener_option(
+                &["OPTION_CALL_VOLUME_0"],
+                &[ScreenerOptionField::Symbol, ScreenerOptionField::Items],
+            )
+            .await
+            .unwrap();
+        let sent = sent.lock().await;
+        let subscribe: serde_json::Value = serde_json::from_str(&sent[1]).unwrap();
+        let item = &subscribe["requests"][0];
+
+        assert_eq!(item["service"], "SCREENER_OPTION");
+        assert_eq!(item["command"], "SUBS");
+        assert_eq!(item["parameters"]["fields"], "0,4");
     }
 }
