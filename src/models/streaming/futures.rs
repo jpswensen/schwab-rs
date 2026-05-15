@@ -16,6 +16,7 @@ fn parse_num(v: &serde_json::Value) -> Option<Number> {
 /// Field indices for level-one futures streaming data.
 ///
 /// Each variant maps to a numeric key in the Schwab streaming JSON protocol.
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
 pub enum FuturesField {

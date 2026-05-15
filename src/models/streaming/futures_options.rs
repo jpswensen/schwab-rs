@@ -7,6 +7,7 @@ use super::super::Number;
 /// The enum has 32 variants with sequential indices starting at 0.
 /// Use [`FuturesOptionField::all()`] to get a slice of every variant and
 /// [`FuturesOptionField::index()`] to retrieve the numeric index.
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
 pub enum FuturesOptionField {

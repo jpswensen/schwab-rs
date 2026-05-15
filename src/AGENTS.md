@@ -141,6 +141,8 @@ Internal functions for building query parameter vectors:
 - Reconnect policy: 10 attempts, 1s exponential backoff doubled to a 30s cap, 0-500ms jitter, code 3 LOGIN_DENIED stops reconnecting
 - Message dispatch maps supported level-one service names into the matching `StreamData` variants and skips unknown services with a warning
 - `WsTransport` trait methods return `Send` futures so the session loop can run inside `tokio::spawn`
+- `StreamParameters` uses a manual `Debug` impl that shows `"[REDACTED]"` for the `authorization` field so bearer tokens never appear in debug output; `StreamRequest` and `StreamRequestItem` derive `Debug` and inherit the redaction transitively
+- `build_view()` passes `customer_id` and `correl_id` into the request item like all other protocol builders; `OptionField`, `FuturesField`, and `FuturesOptionField` are all `#[non_exhaustive]`
 
 ## Test Patterns
 

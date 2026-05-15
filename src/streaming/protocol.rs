@@ -33,7 +33,7 @@ pub(crate) struct StreamRequestItem {
 /// LOGIN requests use `authorization`, `schwab_client_channel`, and
 /// `schwab_client_function_id`. SUBS/ADD requests use `keys` and `fields`.
 #[allow(missing_docs)]
-#[derive(Debug, Default, Serialize)]
+#[derive(Default, Serialize)]
 pub(crate) struct StreamParameters {
     #[serde(rename = "Authorization", skip_serializing_if = "Option::is_none")]
     pub(crate) authorization: Option<String>,
@@ -51,6 +51,21 @@ pub(crate) struct StreamParameters {
     pub(crate) keys: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) fields: Option<String>,
+}
+
+impl std::fmt::Debug for StreamParameters {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StreamParameters")
+            .field(
+                "authorization",
+                &self.authorization.as_ref().map(|_| "[REDACTED]"),
+            )
+            .field("schwab_client_channel", &self.schwab_client_channel)
+            .field("schwab_client_function_id", &self.schwab_client_function_id)
+            .field("keys", &self.keys)
+            .field("fields", &self.fields)
+            .finish()
+    }
 }
 
 // ── Response types ─────────────────────────────────────────────
@@ -296,8 +311,8 @@ pub(crate) fn build_unsubs(
 pub(crate) fn build_view(
     request_id: &str,
     service_name: &str,
-    _customer_id: &str,
-    _correl_id: &str,
+    customer_id: &str,
+    correl_id: &str,
     field_indices: &[u32],
 ) -> crate::Result<String> {
     let fields = field_indices
@@ -310,8 +325,8 @@ pub(crate) fn build_view(
             requestid: request_id.to_string(),
             service: service_name.to_string(),
             command: "VIEW".to_string(),
-            schwab_client_customer_id: String::new(),
-            schwab_client_correl_id: String::new(),
+            schwab_client_customer_id: customer_id.to_string(),
+            schwab_client_correl_id: correl_id.to_string(),
             parameters: StreamParameters {
                 fields: Some(fields),
                 ..Default::default()
@@ -390,10 +405,15 @@ mod tests {
             }],
         };
         let debug = format!("{req:?}");
-        // Verify the Debug output can be produced without panicking.
-        // The authorization field is internal-only, so its presence
-        // in Debug is acceptable per the task requirements.
-        assert!(!debug.is_empty());
+        // Bearer token must never appear in debug output.
+        assert!(
+            !debug.contains("SECRET_TOKEN"),
+            "bearer token leaked in Debug output: {debug}"
+        );
+        assert!(
+            debug.contains("[REDACTED]"),
+            "redaction marker missing: {debug}"
+        );
     }
 
     #[test]

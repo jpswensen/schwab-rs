@@ -3,6 +3,7 @@ use super::super::Number;
 /// Fields available in level-one option streaming data.
 ///
 /// Each variant maps to an index in the Schwab streaming response array.
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
 pub enum OptionField {
