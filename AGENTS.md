@@ -76,7 +76,7 @@ Runs on Ubuntu, macOS, Windows:
 - `docs` (stable, Ubuntu)
 - `audit` (daily cron + on Cargo.toml/Cargo.lock changes)
 
-Release: `release-plz` runs on every push to `main` (+ manual `workflow_dispatch` fallback). Two independent jobs:
+Release: `release-plz` runs on manual `workflow_dispatch` only. Two independent jobs:
 
 - `release-pr`: opens/updates a PR with version bump and changelog entries (from Conventional Commits)
 - `release`: publishes to crates.io, creates git tag, and GitHub release when a version bump lands on main
@@ -89,13 +89,15 @@ Configuration lives in `release-plz.toml` (semver checking, changelog, git relea
 
 ### Release Workflow
 
-Standard automated flow:
+Manual trigger flow (Actions > Release-plz > Run workflow):
 
 1. Push commits to `main` using Conventional Commits (`feat:`, `fix:`, etc.)
-2. `release-pr` opens a PR with the version bump, `Cargo.lock` update, and `CHANGELOG.md` entries
-3. Review and merge the release PR
-4. `release` detects the version bump, runs `cargo publish`, creates git tag and GitHub release
-5. Verify at `https://crates.io/crates/schwab`
+2. When ready to release, trigger the workflow manually from GitHub Actions
+3. `release-pr` opens a PR with the version bump, `Cargo.lock` update, and `CHANGELOG.md` entries
+4. Review and merge the release PR
+5. Trigger the workflow again to publish
+6. `release` detects the version bump, runs `cargo publish`, creates git tag and GitHub release
+7. Verify at `https://crates.io/crates/schwab`
 
 ### Manual Release Fallback
 
@@ -105,6 +107,7 @@ If `release-pr` is unavailable, version bumps can be done manually:
 2. Run `cargo update --workspace` to sync `Cargo.lock`
 3. Commit **both** `Cargo.toml` and `Cargo.lock` together (dirty `Cargo.lock` causes `cargo publish` to fail)
 4. Push to `main`
+5. Trigger the release-plz workflow manually, or run `cargo publish` locally
 
 ## Review Instructions
 
