@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::Number;
 use super::enums::*;
@@ -220,7 +220,7 @@ pub struct CashInitialBalance {
 /// Discriminated union of account instrument types.
 /// Variants ordered most-specific first for `untagged` deserialization.
 /// Check `asset_type` on the deserialized struct to identify the kind.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 #[allow(missing_docs)]
 pub enum AccountsInstrument {
@@ -232,7 +232,7 @@ pub enum AccountsInstrument {
 }
 
 /// allOf AccountsBaseInstrument (no extra fields).
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct AccountEquity {
@@ -245,7 +245,7 @@ pub struct AccountEquity {
 }
 
 /// allOf AccountsBaseInstrument + fixed-income fields.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct AccountFixedIncome {
@@ -263,7 +263,7 @@ pub struct AccountFixedIncome {
 }
 
 /// allOf AccountsBaseInstrument (no extra fields).
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct AccountMutualFund {
@@ -276,7 +276,7 @@ pub struct AccountMutualFund {
 }
 
 /// allOf AccountsBaseInstrument + option fields.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct AccountOption {
@@ -297,7 +297,7 @@ pub struct AccountOption {
 }
 
 /// allOf AccountsBaseInstrument + cash-equivalent type.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct AccountCashEquivalent {
@@ -314,7 +314,7 @@ pub struct AccountCashEquivalent {
 }
 
 /// Option deliverable details for account positions.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct AccountApiOptionDeliverable {
@@ -370,7 +370,7 @@ pub struct AccountNumberHash {
 
 /// Recursive order: `child_order_strategies` and `replacing_order_collection`
 /// contain `Vec<Order>`.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct Order {
@@ -414,7 +414,7 @@ pub struct Order {
 
 /// Recursive order request: `child_order_strategies` and
 /// `replacing_order_collection` contain `Vec<OrderRequest>`.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct OrderRequest {
@@ -455,7 +455,7 @@ pub struct OrderRequest {
 }
 
 /// Individual leg of a multi-leg order.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct OrderLegCollection {
@@ -471,7 +471,7 @@ pub struct OrderLegCollection {
 }
 
 /// Execution activity for an order.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct OrderActivity {
@@ -483,7 +483,7 @@ pub struct OrderActivity {
 }
 
 /// Single execution leg with price and quantity.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct ExecutionLeg {
