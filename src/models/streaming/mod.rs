@@ -14,6 +14,10 @@ pub mod futures;
 pub mod futures_options;
 /// Level-one option streaming data.
 pub mod options;
+/// Equity screener streaming data.
+pub mod screener_equity;
+/// Option screener streaming data.
+pub mod screener_option;
 
 pub use chart_equity::{ChartEquity, ChartEquityField};
 pub use chart_futures::{ChartFutures, ChartFuturesField};
@@ -22,6 +26,8 @@ pub use forex::{ForexField, LevelOneForex};
 pub use futures::{FuturesField, LevelOneFutures};
 pub use futures_options::{FuturesOptionField, LevelOneFuturesOption};
 pub use options::{LevelOneOption, OptionField};
+pub use screener_equity::{ScreenerEquity, ScreenerEquityField, ScreenerItem};
+pub use screener_option::{ScreenerOption, ScreenerOptionField};
 
 /// Event received from the Schwab streaming WebSocket connection.
 ///
@@ -76,6 +82,8 @@ pub enum StreamData {
     LevelOneForex(Vec<LevelOneForex>),
     ChartEquities(Vec<ChartEquity>),
     ChartFutures(Vec<ChartFutures>),
+    ScreenerEquities(Vec<ScreenerEquity>),
+    ScreenerOptions(Vec<ScreenerOption>),
 }
 
 /// Acknowledgement returned by the Schwab streaming server for a command request.
