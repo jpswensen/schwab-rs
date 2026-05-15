@@ -27,6 +27,18 @@ enum SessionCommand {
 /// Create a session through `Client::stream()` once that entry point is
 /// available. Each session owns a background WebSocket task, broadcasts parsed
 /// [`StreamEvent`] values, and replays active subscriptions after reconnecting.
+///
+/// # Examples
+///
+/// ```no_run
+/// # async fn example() -> schwab::Result<()> {
+/// use schwab::{Client, Config};
+///
+/// let client = Client::new(Config::new().bearer_token("your-token"));
+/// let session = client.stream().await?;
+/// # Ok(())
+/// # }
+/// ```
 pub struct StreamingSession {
     cmd_tx: mpsc::Sender<SessionCommand>,
     logout_tx: mpsc::Sender<LogoutAck>,
@@ -92,6 +104,24 @@ impl StreamingSession {
     ///
     /// The broadcast channel has a buffer of 1024 events. If a receiver falls
     /// behind, it receives [`tokio::sync::broadcast::error::RecvError::Lagged`].
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> schwab::Result<()> {
+    /// use schwab::{Client, Config, StreamEvent};
+    ///
+    /// let client = Client::new(Config::new().bearer_token("your-token"));
+    /// let session = client.stream().await?;
+    /// let mut rx = session.subscribe();
+    /// tokio::spawn(async move {
+    ///     while let Ok(event) = rx.recv().await {
+    ///         println!("{event:?}");
+    ///     }
+    /// });
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn subscribe(&self) -> broadcast::Receiver<StreamEvent> {
         self.event_tx.subscribe()
@@ -105,6 +135,19 @@ impl StreamingSession {
     /// # Errors
     /// Returns [`crate::Error::StreamProtocol`] if the session task has already
     /// stopped or if the LOGOUT command cannot be delivered by the transport.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> schwab::Result<()> {
+    /// use schwab::{Client, Config};
+    ///
+    /// let client = Client::new(Config::new().bearer_token("your-token"));
+    /// let session = client.stream().await?;
+    /// session.disconnect().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[tracing::instrument(skip_all)]
     pub async fn disconnect(&self) -> crate::Result<()> {
         let (ack_tx, ack_rx) = oneshot::channel();
@@ -124,6 +167,22 @@ impl StreamingSession {
     /// Returns [`crate::Error::EmptySymbols`] if `symbols` is empty.
     /// Returns [`crate::Error::StreamProtocol`] if no fields are provided, the
     /// command cannot be serialized, or the session command loop is stopped.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> schwab::Result<()> {
+    /// use schwab::{Client, Config, EquityField};
+    ///
+    /// let client = Client::new(Config::new().bearer_token("your-token"));
+    /// let session = client.stream().await?;
+    /// session.subscribe_equities(
+    ///     &["AAPL", "MSFT"],
+    ///     &[EquityField::LastPrice, EquityField::BidPrice],
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[tracing::instrument(skip_all)]
     pub async fn subscribe_equities(
         &self,
@@ -141,6 +200,22 @@ impl StreamingSession {
     /// Returns [`crate::Error::EmptySymbols`] if `symbols` is empty.
     /// Returns [`crate::Error::StreamProtocol`] if no fields are provided, the
     /// command cannot be serialized, or the session command loop is stopped.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> schwab::Result<()> {
+    /// use schwab::{Client, Config, OptionField};
+    ///
+    /// let client = Client::new(Config::new().bearer_token("your-token"));
+    /// let session = client.stream().await?;
+    /// session.subscribe_options(
+    ///     &["AAPL  251219C00200000"],
+    ///     &[OptionField::LastPrice, OptionField::BidPrice],
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[tracing::instrument(skip_all)]
     pub async fn subscribe_options(
         &self,
@@ -158,6 +233,22 @@ impl StreamingSession {
     /// Returns [`crate::Error::EmptySymbols`] if `symbols` is empty.
     /// Returns [`crate::Error::StreamProtocol`] if no fields are provided, the
     /// command cannot be serialized, or the session command loop is stopped.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> schwab::Result<()> {
+    /// use schwab::{Client, Config, FuturesField};
+    ///
+    /// let client = Client::new(Config::new().bearer_token("your-token"));
+    /// let session = client.stream().await?;
+    /// session.subscribe_futures(
+    ///     &["/ESM25"],
+    ///     &[FuturesField::LastPrice, FuturesField::BidPrice],
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[tracing::instrument(skip_all)]
     pub async fn subscribe_futures(
         &self,
@@ -175,6 +266,22 @@ impl StreamingSession {
     /// Returns [`crate::Error::EmptySymbols`] if `symbols` is empty.
     /// Returns [`crate::Error::StreamProtocol`] if no fields are provided, the
     /// command cannot be serialized, or the session command loop is stopped.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> schwab::Result<()> {
+    /// use schwab::{Client, Config, FuturesOptionField};
+    ///
+    /// let client = Client::new(Config::new().bearer_token("your-token"));
+    /// let session = client.stream().await?;
+    /// session.subscribe_futures_options(
+    ///     &["/ESM25C5500"],
+    ///     &[FuturesOptionField::LastPrice, FuturesOptionField::BidPrice],
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[tracing::instrument(skip_all)]
     pub async fn subscribe_futures_options(
         &self,
@@ -195,6 +302,22 @@ impl StreamingSession {
     /// Returns [`crate::Error::EmptySymbols`] if `symbols` is empty.
     /// Returns [`crate::Error::StreamProtocol`] if no fields are provided, the
     /// command cannot be serialized, or the session command loop is stopped.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # async fn example() -> schwab::Result<()> {
+    /// use schwab::{Client, Config, ForexField};
+    ///
+    /// let client = Client::new(Config::new().bearer_token("your-token"));
+    /// let session = client.stream().await?;
+    /// session.subscribe_forex(
+    ///     &["EUR/USD"],
+    ///     &[ForexField::LastPrice, ForexField::BidPrice],
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[tracing::instrument(skip_all)]
     pub async fn subscribe_forex(
         &self,

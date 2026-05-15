@@ -5,6 +5,15 @@ use super::super::Number;
 /// Field selector for level-one equity streaming subscriptions.
 ///
 /// Each variant corresponds to a numeric field index in the Schwab streaming protocol.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::EquityField;
+///
+/// assert_eq!(EquityField::Symbol.index(), 0);
+/// assert_eq!(EquityField::BidPrice.index(), 1);
+/// ```
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -133,6 +142,18 @@ impl EquityField {
 ///
 /// All fields are `Option<T>` because the Schwab API sends only subscribed fields.
 /// Named metadata fields use string keys; numeric data fields use numeric string keys.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::LevelOneEquity;
+///
+/// let data = LevelOneEquity {
+///     symbol: Some("AAPL".to_string()),
+///     ..Default::default()
+/// };
+/// assert_eq!(data.symbol.as_deref(), Some("AAPL"));
+/// ```
 #[allow(missing_docs)]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct LevelOneEquity {

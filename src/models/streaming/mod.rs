@@ -18,6 +18,20 @@ pub use futures_options::{FuturesOptionField, LevelOneFuturesOption};
 pub use options::{LevelOneOption, OptionField};
 
 /// Event received from the Schwab streaming WebSocket connection.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::{StreamEvent, StreamData};
+///
+/// fn handle(event: StreamEvent) {
+///     match event {
+///         StreamEvent::Data(data) => println!("data: {data:?}"),
+///         StreamEvent::Heartbeat(ts) => println!("heartbeat {ts}"),
+///         _ => {}
+///     }
+/// }
+/// ```
 #[non_exhaustive]
 #[derive(Clone, Debug)]
 #[allow(missing_docs)]
@@ -31,6 +45,20 @@ pub enum StreamEvent {
 }
 
 /// Market data payload delivered within a [`StreamEvent::Data`] event.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::{StreamData, LevelOneEquity};
+///
+/// fn handle(data: StreamData) {
+///     if let StreamData::LevelOneEquities(updates) = data {
+///         for update in updates {
+///             println!("{:?}", update.symbol);
+///         }
+///     }
+/// }
+/// ```
 #[non_exhaustive]
 #[derive(Clone, Debug, PartialEq)]
 #[allow(missing_docs)]
@@ -43,6 +71,21 @@ pub enum StreamData {
 }
 
 /// Acknowledgement returned by the Schwab streaming server for a command request.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::StreamResponse;
+///
+/// let resp = StreamResponse {
+///     service: Some("LEVELONE_EQUITIES".to_string()),
+///     command: Some("SUBS".to_string()),
+///     request_id: None,
+///     code: Some(0),
+///     message: Some("OK".to_string()),
+/// };
+/// assert_eq!(resp.code, Some(0));
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 #[allow(missing_docs)]
 pub struct StreamResponse {

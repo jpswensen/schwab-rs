@@ -7,6 +7,15 @@ use super::super::Number;
 /// The enum has 32 variants with sequential indices starting at 0.
 /// Use [`FuturesOptionField::all()`] to get a slice of every variant and
 /// [`FuturesOptionField::index()`] to retrieve the numeric index.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::FuturesOptionField;
+///
+/// assert_eq!(FuturesOptionField::Symbol.index(), 0);
+/// assert_eq!(FuturesOptionField::BidPrice.index(), 1);
+/// ```
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
@@ -100,6 +109,18 @@ fn parse_num(v: &serde_json::Value) -> Option<Number> {
 /// Built from index-keyed JSON via the crate-internal `from_value` parser
 /// rather than serde `Deserialize`, because the streaming API uses numeric
 /// string keys (e.g. `"1"`, `"2"`) instead of named fields.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::LevelOneFuturesOption;
+///
+/// let data = LevelOneFuturesOption {
+///     symbol: Some("/ESM25C5500".to_string()),
+///     ..Default::default()
+/// };
+/// assert_eq!(data.symbol.as_deref(), Some("/ESM25C5500"));
+/// ```
 #[derive(Clone, Debug, Default, PartialEq)]
 #[allow(missing_docs)]
 pub struct LevelOneFuturesOption {

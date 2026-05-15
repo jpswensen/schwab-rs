@@ -41,11 +41,13 @@ mod config;
 mod error;
 mod market_data_api;
 mod models;
+// The options module shadows the `options` submodule inside models::streaming
+// that is pulled into the public namespace by `pub use models::*`; the shadow
+// is intentional and the re-export is still accessible as MoverOptions etc.
+#[allow(hidden_glob_reexports)]
 mod options;
 mod order_builder;
 mod query;
-// The streaming module name shadows the pub use models::* glob re-export of
-// a private options submodule; the shadow is intentional and harmless.
 #[allow(hidden_glob_reexports)]
 mod streaming;
 mod streaming_api;

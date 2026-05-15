@@ -84,8 +84,8 @@ let mut session = client.stream().await?;
 let mut rx = session.subscribe();
 
 session.subscribe_equities(
-    ["AAPL", "MSFT"],
-    [EquityField::LastPrice, EquityField::BidPrice, EquityField::AskPrice],
+    &["AAPL", "MSFT"],
+    &[EquityField::LastPrice, EquityField::BidPrice, EquityField::AskPrice],
 ).await?;
 
 while let Ok(event) = rx.recv().await {

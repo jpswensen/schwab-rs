@@ -3,6 +3,15 @@ use super::super::Number;
 /// Fields available in level-one option streaming data.
 ///
 /// Each variant maps to an index in the Schwab streaming response array.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::OptionField;
+///
+/// assert_eq!(OptionField::Symbol.index(), 0);
+/// assert_eq!(OptionField::BidPrice.index(), 2);
+/// ```
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
@@ -140,6 +149,18 @@ impl OptionField {
 ///
 /// Built from a raw JSON object via the crate-internal `from_value` parser.
 /// Metadata fields use string keys; data fields use numeric index keys.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::LevelOneOption;
+///
+/// let data = LevelOneOption {
+///     symbol: Some("AAPL  251219C00200000".to_string()),
+///     ..Default::default()
+/// };
+/// assert_eq!(data.symbol.as_deref(), Some("AAPL  251219C00200000"));
+/// ```
 #[derive(Clone, Debug, Default, PartialEq)]
 #[allow(missing_docs)]
 pub struct LevelOneOption {

@@ -5,6 +5,15 @@ use super::super::Number;
 /// Field selector for level-one forex streaming subscriptions.
 ///
 /// Each variant corresponds to a numeric field index in the Schwab streaming protocol.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::ForexField;
+///
+/// assert_eq!(ForexField::Symbol.index(), 0);
+/// assert_eq!(ForexField::BidPrice.index(), 1);
+/// ```
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -89,6 +98,18 @@ impl ForexField {
 ///
 /// All fields are `Option<T>` because the Schwab API sends only subscribed fields.
 /// Named metadata fields use string keys; numeric data fields use numeric string keys.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::LevelOneForex;
+///
+/// let data = LevelOneForex {
+///     symbol: Some("EUR/USD".to_string()),
+///     ..Default::default()
+/// };
+/// assert_eq!(data.symbol.as_deref(), Some("EUR/USD"));
+/// ```
 #[allow(missing_docs)]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct LevelOneForex {

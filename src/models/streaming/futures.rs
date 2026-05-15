@@ -8,6 +8,15 @@ fn parse_num(v: &serde_json::Value) -> Option<Number> {
 /// Field indices for level-one futures streaming data.
 ///
 /// Each variant maps to a numeric key in the Schwab streaming JSON protocol.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::FuturesField;
+///
+/// assert_eq!(FuturesField::Symbol.index(), 0);
+/// assert_eq!(FuturesField::BidPrice.index(), 1);
+/// ```
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
@@ -110,6 +119,18 @@ impl FuturesField {
 }
 
 /// Level-one futures data from the Schwab streaming WebSocket API.
+///
+/// # Examples
+///
+/// ```
+/// use schwab::LevelOneFutures;
+///
+/// let data = LevelOneFutures {
+///     symbol: Some("/ESM25".to_string()),
+///     ..Default::default()
+/// };
+/// assert_eq!(data.symbol.as_deref(), Some("/ESM25"));
+/// ```
 #[derive(Clone, Debug, Default, PartialEq)]
 #[allow(missing_docs)]
 pub struct LevelOneFutures {
