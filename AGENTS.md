@@ -81,6 +81,8 @@ Release: `release-plz` runs on every push to `main` (+ manual `workflow_dispatch
 
 The workflow uses crates.io Trusted Publishing with GitHub Actions OIDC (`id-token: write`) instead of `CARGO_REGISTRY_TOKEN`. The Trusted Publisher is configured with workflow filename `release-plz.yml`. crates.io requires the first release of a brand-new crate to be published manually with a token that has `publish-new` scope before Trusted Publishing works.
 
+The `release-pr` job uses the `RELEASE_PLZ_TOKEN` repository secret instead of the default `GITHUB_TOKEN` so release PR branch pushes trigger normal CI workflows. The `release` publish job can keep using `GITHUB_TOKEN` because it publishes after a version bump lands on `main` and does not need to trigger another workflow.
+
 Configuration lives in `release-plz.toml` (semver checking, changelog, git release/tag settings).
 
 ### Release Workflow
