@@ -48,8 +48,7 @@ mod models;
 mod options;
 mod order_builder;
 mod query;
-#[allow(hidden_glob_reexports)]
-mod streaming;
+mod stream_session;
 mod streaming_api;
 mod trader_api;
 
@@ -62,7 +61,7 @@ pub use options::{
     TransactionListOptions,
 };
 pub use order_builder::OrderBuilder;
-pub use streaming::StreamingSession;
+pub use stream_session::StreamingSession;
 
 #[cfg(test)]
 mod test_support;

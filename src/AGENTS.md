@@ -17,7 +17,7 @@ lib.rs
   mod options           # query param builders (private, re-exported individually)
   mod order_builder     # OrderBuilder (private, re-exported)
   mod query             # internal query string helpers
-  mod streaming         # WebSocket protocol, transport, StreamingSession engine
+  mod stream_session    # WebSocket protocol, transport, StreamingSession engine
   mod streaming_api     # Client::stream entry point, credentials bootstrap
   mod test_support      # #[cfg(test)] helpers
 ```
@@ -129,19 +129,25 @@ Internal functions for building query parameter vectors:
 - `comma_separated_symbols()` / `comma_separated_symbols_required()` - join symbol lists
 - `push_optional()` - conditionally add optional params
 
-## Streaming Module (`streaming/`)
+## Streaming Module (`stream_session/`)
 
 - `StreamingSession` is non-generic for callers; `StreamingSession::new<T: WsTransport + 'static>` is crate-internal for mockable construction
-- `WsTransport` has a source-local `MockTransport` in `src/streaming/mod.rs` tests; it scripts `next()` responses with `VecDeque<Result<Option<String>>>` and records `send()` payloads for LOGIN/SUBS assertions
+- `WsTransport` has a source-local `MockTransport` in `src/stream_session/mod.rs` tests; it scripts `next()` responses with `VecDeque<Result<Option<String>>>` and records `send()` payloads for LOGIN/SUBS assertions
 - `subscribe()` returns a `tokio::sync::broadcast::Receiver<StreamEvent>` with a 1024-event buffer
 - `disconnect()` sends LOGOUT through the background task, closes the transport, and stops the loop
 - Level-one subscription methods cover equities, options, futures, futures options, and forex only
 - The message loop uses a biased `tokio::select!` with command handling before reads so ready SUBS commands are acknowledged before an already-ready close/read branch can move into reconnect handling
 - The session stores one active subscription per service and replays stored SUBS commands after reconnect
+- Subscriptions are stored before sending the SUBS command so a concurrent reconnect can replay them; on send failure the stored subscription is rolled back
+- Symbol inputs are trimmed and whitespace-only entries filtered before validation
+- `replay_subscriptions` propagates errors so a failed replay is treated as a reconnect failure and triggers the next attempt
+- The message loop closes the old transport before entering the reconnect path
+- Malformed or missing heartbeat timestamps are logged and skipped rather than broadcast as epoch values
+- Login response validation requires an explicit `Some(0)` success code; a missing code is treated as a protocol error
 - Reconnect policy: 10 attempts, 1s exponential backoff doubled to a 30s cap, 0-500ms jitter, code 3 LOGIN_DENIED stops reconnecting
 - Message dispatch maps supported level-one service names into the matching `StreamData` variants and skips unknown services with a warning
 - `WsTransport` trait methods return `Send` futures so the session loop can run inside `tokio::spawn`
-- `StreamParameters` uses a manual `Debug` impl that shows `"[REDACTED]"` for the `authorization` field so bearer tokens never appear in debug output; `StreamRequest` and `StreamRequestItem` derive `Debug` and inherit the redaction transitively
+- `StreamParameters` uses a manual `Debug` impl that shows `"<redacted>"` for the `authorization` field so bearer tokens never appear in debug output; `StreamRequest` and `StreamRequestItem` derive `Debug` and inherit the redaction transitively; `SessionCredentials` also has a manual `Debug` impl that shows `"<redacted>"` for `bearer_token`; all redaction strings use `"<redacted>"` to match the convention in `Error`'s manual `Debug` impl
 - `build_view()` passes `customer_id` and `correl_id` into the request item like all other protocol builders; `OptionField`, `FuturesField`, and `FuturesOptionField` are all `#[non_exhaustive]`
 
 ## Test Patterns

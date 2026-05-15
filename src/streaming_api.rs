@@ -2,8 +2,8 @@
 
 use tracing::instrument;
 
-use crate::streaming::transport::{TungsteniteTransport, WsTransport};
-use crate::streaming::{SessionCredentials, StreamingSession};
+use crate::stream_session::transport::{TungsteniteTransport, WsTransport};
+use crate::stream_session::{SessionCredentials, StreamingSession};
 use crate::{Client, Error};
 
 impl Client {

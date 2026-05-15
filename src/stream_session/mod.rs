@@ -9,8 +9,8 @@ use crate::models::streaming::{
     StreamData, StreamEvent, StreamResponse, equities::EquityField, forex::ForexField,
     futures::FuturesField, futures_options::FuturesOptionField, options::OptionField,
 };
-use crate::streaming::protocol::ParsedMessage;
-use crate::streaming::transport::WsTransport;
+use crate::stream_session::protocol::ParsedMessage;
+use crate::stream_session::transport::WsTransport;
 
 pub(crate) mod protocol;
 pub(crate) mod transport;
@@ -62,6 +62,19 @@ pub(crate) struct SessionCredentials {
     pub(crate) function_id: String,
     pub(crate) bearer_token: String,
     pub(crate) socket_url: String,
+}
+
+impl std::fmt::Debug for SessionCredentials {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SessionCredentials")
+            .field("customer_id", &self.customer_id)
+            .field("correl_id", &self.correl_id)
+            .field("channel", &self.channel)
+            .field("function_id", &self.function_id)
+            .field("bearer_token", &"<redacted>")
+            .field("socket_url", &self.socket_url)
+            .finish()
+    }
 }
 
 impl StreamingSession {
@@ -336,6 +349,11 @@ impl StreamingSession {
         symbols: &[&str],
         field_indices: Vec<u32>,
     ) -> crate::Result<()> {
+        let symbols: Vec<&str> = symbols
+            .iter()
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .collect();
         if symbols.is_empty() {
             return Err(crate::Error::EmptySymbols);
         }
@@ -350,30 +368,45 @@ impl StreamingSession {
             service,
             &self.credentials.customer_id,
             &self.credentials.correl_id,
-            symbols,
+            &symbols,
             &field_indices,
         )?;
+
+        // Store subscription before sending so a concurrent reconnect will
+        // replay it even if the ack has not arrived yet.
+        {
+            let mut subs = self.subs.lock().await;
+            subs.retain(|sub| sub.service != service);
+            subs.push(StoredSub {
+                service: service.to_string(),
+                symbols: symbols.iter().map(|s| (*s).to_string()).collect(),
+                field_indices,
+            });
+        }
+
         let (ack_tx, ack_rx) = oneshot::channel();
-        self.cmd_tx
+        let send_result = self
+            .cmd_tx
             .send(SessionCommand::Send {
                 text: message,
                 ack: ack_tx,
             })
-            .await
-            .map_err(|e| crate::Error::StreamProtocol(e.to_string()))?;
-        ack_rx
-            .await
-            .map_err(|e| crate::Error::StreamProtocol(e.to_string()))??;
+            .await;
 
-        let mut subs = self.subs.lock().await;
-        subs.retain(|sub| sub.service != service);
-        subs.push(StoredSub {
-            service: service.to_string(),
-            symbols: symbols.iter().map(|symbol| (*symbol).to_string()).collect(),
-            field_indices,
-        });
+        let result = match send_result {
+            Ok(()) => ack_rx
+                .await
+                .map_err(|e| crate::Error::StreamProtocol(e.to_string()))
+                .and_then(|r| r),
+            Err(e) => Err(crate::Error::StreamProtocol(e.to_string())),
+        };
 
-        Ok(())
+        if result.is_err() {
+            // Rollback: remove the subscription we just stored.
+            self.subs.lock().await.retain(|sub| sub.service != service);
+        }
+
+        result
     }
 }
 
@@ -424,6 +457,7 @@ async fn run_message_loop<T: WsTransport + 'static>(
                             let _ = event_tx.send(StreamEvent::Disconnected {
                                 error: Some(error_text),
                             });
+                            let _ = transport.close().await;
                             match wait_for_reconnect::<T>(&event_tx, &subs, &credentials, &mut logout_rx).await {
                                 ReconnectOutcome::Connected(new_transport) => transport = new_transport,
                                 ReconnectOutcome::Stopped => break,
@@ -444,6 +478,7 @@ async fn run_message_loop<T: WsTransport + 'static>(
                         DispatchAction::Continue => {}
                         DispatchAction::Reconnect(error) => {
                             let _ = event_tx.send(StreamEvent::Disconnected { error: Some(error) });
+                            let _ = transport.close().await;
                             match wait_for_reconnect::<T>(&event_tx, &subs, &credentials, &mut logout_rx).await {
                                 ReconnectOutcome::Connected(new_transport) => transport = new_transport,
                                 ReconnectOutcome::Stopped => break,
@@ -457,6 +492,7 @@ async fn run_message_loop<T: WsTransport + 'static>(
                     },
                     Ok(None) => {
                         let _ = event_tx.send(StreamEvent::Disconnected { error: None });
+                        let _ = transport.close().await;
                         match wait_for_reconnect::<T>(&event_tx, &subs, &credentials, &mut logout_rx).await {
                             ReconnectOutcome::Connected(new_transport) => transport = new_transport,
                             ReconnectOutcome::Stopped => break,
@@ -466,6 +502,7 @@ async fn run_message_loop<T: WsTransport + 'static>(
                         let _ = event_tx.send(StreamEvent::Disconnected {
                             error: Some(error.to_string()),
                         });
+                        let _ = transport.close().await;
                         match wait_for_reconnect::<T>(&event_tx, &subs, &credentials, &mut logout_rx).await {
                             ReconnectOutcome::Connected(new_transport) => transport = new_transport,
                             ReconnectOutcome::Stopped => break,
@@ -673,7 +710,13 @@ async fn reconnect<T: WsTransport>(
             }
         }
 
-        replay_subscriptions(&mut transport, credentials, subs).await;
+        if let Err(error) = replay_subscriptions(&mut transport, credentials, subs).await {
+            tracing::warn!(
+                "reconnect attempt {attempt} failed during subscription replay: {error}"
+            );
+            delay = (delay * 2).min(max_delay);
+            continue;
+        }
         let _ = event_tx.send(StreamEvent::Reconnected);
         return Some(transport);
     }
@@ -688,28 +731,21 @@ async fn replay_subscriptions<T: WsTransport>(
     transport: &mut T,
     credentials: &SessionCredentials,
     subs: &Arc<Mutex<Vec<StoredSub>>>,
-) {
+) -> crate::Result<()> {
     let stored_subs = subs.lock().await.clone();
     for sub in stored_subs {
         let symbols = sub.symbols.iter().map(String::as_str).collect::<Vec<_>>();
-        match protocol::build_subs(
+        let message = protocol::build_subs(
             "1",
             &sub.service,
             &credentials.customer_id,
             &credentials.correl_id,
             &symbols,
             &sub.field_indices,
-        ) {
-            Ok(message) => {
-                if let Err(error) = transport.send(message).await {
-                    tracing::warn!("failed to replay streaming subscription: {error}");
-                }
-            }
-            Err(error) => {
-                tracing::warn!("failed to rebuild streaming subscription: {error}");
-            }
-        }
+        )?;
+        transport.send(message).await?;
     }
+    Ok(())
 }
 
 enum LoginResult {
@@ -728,11 +764,11 @@ fn check_login_response(text: &str) -> LoginResult {
         if let ParsedMessage::Response(response) = message
             && let Some(content) = response.content
         {
-            let code = content.code.unwrap_or(0);
-            if code == 0 {
-                return LoginResult::Ok;
+            match content.code {
+                Some(0) => return LoginResult::Ok,
+                Some(code) => return LoginResult::Denied(code, content.msg.unwrap_or_default()),
+                None => return LoginResult::Error,
             }
-            return LoginResult::Denied(code, content.msg.unwrap_or_default());
         }
     }
 

@@ -58,7 +58,7 @@ impl std::fmt::Debug for StreamParameters {
         f.debug_struct("StreamParameters")
             .field(
                 "authorization",
-                &self.authorization.as_ref().map(|_| "[REDACTED]"),
+                &self.authorization.as_ref().map(|_| "<redacted>"),
             )
             .field("schwab_client_channel", &self.schwab_client_channel)
             .field("schwab_client_function_id", &self.schwab_client_function_id)
@@ -176,12 +176,10 @@ pub(crate) fn parse_message(text: &str) -> crate::Result<Vec<ParsedMessage>> {
     }
     if let Some(notifies) = msg.notify {
         for n in notifies {
-            let ts = n
-                .heartbeat
-                .as_deref()
-                .and_then(|s| s.parse::<i64>().ok())
-                .unwrap_or(0);
-            result.push(ParsedMessage::Heartbeat(ts));
+            match n.heartbeat.as_deref().and_then(|s| s.parse::<i64>().ok()) {
+                Some(ts) => result.push(ParsedMessage::Heartbeat(ts)),
+                None => tracing::warn!("skipping malformed heartbeat: {:?}", n.heartbeat),
+            }
         }
     }
     if let Some(data) = msg.data {
@@ -411,7 +409,7 @@ mod tests {
             "bearer token leaked in Debug output: {debug}"
         );
         assert!(
-            debug.contains("[REDACTED]"),
+            debug.contains("<redacted>"),
             "redaction marker missing: {debug}"
         );
     }
