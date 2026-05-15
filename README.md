@@ -71,6 +71,38 @@ The streaming protocol parser accepts command response IDs as either JSON string
 
 Reconnect behavior uses 10 attempts with exponential backoff starting at 1 second, doubling to a 30 second cap, plus 0-500ms jitter. A LOGIN_DENIED response with code 3 stops reconnecting so callers can create a new session with fresh credentials.
 
+Note: v1 does not refresh the bearer token after reconnect. If the token expires during a long-running session, create a new session with a fresh token.
+
+```rust,no_run
+use schwab::{Client, Config, EquityField, StreamEvent, StreamData};
+
+# async fn example() -> schwab::Result<()> {
+let client = Client::new(Config::new().bearer_token("your-token"));
+let mut session = client.stream().await?;
+let mut rx = session.subscribe();
+
+session.subscribe_equities(
+    ["AAPL", "MSFT"],
+    [EquityField::LastPrice, EquityField::BidPrice, EquityField::AskPrice],
+).await?;
+
+while let Ok(event) = rx.recv().await {
+    match event {
+        StreamEvent::Data(StreamData::LevelOneEquities(updates)) => {
+            for update in updates {
+                println!("{:?}", update);
+            }
+        }
+        StreamEvent::Heartbeat(ts) => println!("heartbeat {ts}"),
+        StreamEvent::Disconnected { .. } => break,
+        _ => {}
+    }
+}
+session.disconnect().await?;
+# Ok(())
+# }
+```
+
 ## Feature flags
 
 | Feature | Default | Purpose |
