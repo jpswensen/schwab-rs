@@ -18,6 +18,7 @@ Everything is re-exported via `pub use` in `mod.rs`, then again via `models::*` 
 - `StreamEvent` variants: `Data`, `Response`, `Heartbeat`, `Disconnected`, `Reconnecting`, `Reconnected`
 - `StreamData` variants: `AccountActivity`, `LevelOneEquities`, `LevelOneOptions`, `LevelOneFutures`, `LevelOneFuturesOptions`, `LevelOneForex`, `ChartEquities`, `ChartFutures`, `ScreenerEquities`, `ScreenerOptions`
 - Field selector enums live beside their data structs and are re-exported from `models::streaming`: `AccountActivityField`, `EquityField`, `OptionField`, `FuturesField`, `FuturesOptionField`, `ForexField`, `ChartEquityField`, `ChartFuturesField`, `ScreenerEquityField`, `ScreenerOptionField`
+- Streaming subscription code converts those field selector enums to protocol field indexes centrally in `StreamingSession::subscribe_service`; model modules still own each enum's `index()` values and `all()` slices
 - `ScreenerItem` struct is defined in `screener_equity.rs` and shared with `screener_option.rs`; both screener data types use `Option<Vec<ScreenerItem>>` for the nested items array (field index 4)
 - Streaming data structs parse numeric string keys with crate-internal `from_value()` helpers instead of serde derives because the WebSocket protocol uses field indexes as JSON keys. Account activity also parses named `seq` and `key` metadata.
 - `from_value()` helpers initialize named metadata in struct literals first, then fill numeric index fields, which keeps partial subscription parsing readable and satisfies `clippy::field_reassign_with_default`

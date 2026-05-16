@@ -65,7 +65,7 @@ Do not commit Schwab client secrets, authorization codes, access tokens, refresh
 
 ## Streaming
 
-Streaming support is built around `StreamingSession`, which owns a background WebSocket task and broadcasts typed `StreamEvent` values to any number of receivers. The session supports account activity, level-one equities, options, futures, futures options, forex, chart equity, chart futures, screener equity, and screener option subscriptions. It sends LOGOUT on `disconnect()`, records active subscriptions, and replays them after reconnecting.
+Streaming support is built around `StreamingSession`, which owns a background WebSocket task and broadcasts typed `StreamEvent` values to any number of receivers. The session supports account activity, level-one equities, options, futures, futures options, forex, chart equity, chart futures, screener equity, and screener option subscriptions. All subscription methods share the same input trimming, field-index serialization, validation, active-subscription recording, and SUBS command delivery path. It sends LOGOUT on `disconnect()`, records active subscriptions, and replays them after reconnecting.
 
 The streaming protocol parser accepts command response IDs as either JSON strings or numbers and maps data messages into typed account activity, level-one, chart, and screener payloads.
 
