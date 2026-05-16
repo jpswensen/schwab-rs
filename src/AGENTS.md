@@ -136,6 +136,7 @@ Internal functions for building query parameter vectors:
 - `subscribe()` returns a `tokio::sync::broadcast::Receiver<StreamEvent>` with a 1024-event buffer
 - `disconnect()` sends LOGOUT through the background task, closes the transport, and stops the loop
 - Subscription methods cover account activity, level-one equities, options, futures, futures options, forex, chart equity, chart futures, screener equity, and screener option
+- All subscription methods route through the private `subscribe_service` helper, which trims symbol/key inputs, serializes each service-specific field enum to field indexes, validates non-empty symbols and fields, stores the active subscription, and sends the SUBS command
 - The message loop uses a biased `tokio::select!` with command handling before reads so ready SUBS commands are acknowledged before an already-ready close/read branch can move into reconnect handling
 - The session stores one active subscription per service and replays stored SUBS commands after reconnect
 - Subscriptions are stored before sending the SUBS command so a concurrent reconnect can replay them; on send failure the stored subscription is rolled back

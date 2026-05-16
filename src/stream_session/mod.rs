@@ -177,12 +177,14 @@ impl StreamingSession {
         keys: &[&str],
         fields: &[AccountActivityField],
     ) -> crate::Result<()> {
-        let field_indices = fields
-            .iter()
-            .map(AccountActivityField::index)
-            .collect::<Vec<_>>();
-        self.subscribe_service("11", "ACCT_ACTIVITY", keys, field_indices)
-            .await
+        self.subscribe_service(
+            "11",
+            "ACCT_ACTIVITY",
+            keys,
+            fields,
+            AccountActivityField::index,
+        )
+        .await
     }
 
     /// Disconnect from the streaming service.
@@ -247,9 +249,14 @@ impl StreamingSession {
         symbols: &[&str],
         fields: &[EquityField],
     ) -> crate::Result<()> {
-        let field_indices = fields.iter().map(EquityField::index).collect::<Vec<_>>();
-        self.subscribe_service("2", "LEVELONE_EQUITIES", symbols, field_indices)
-            .await
+        self.subscribe_service(
+            "2",
+            "LEVELONE_EQUITIES",
+            symbols,
+            fields,
+            EquityField::index,
+        )
+        .await
     }
 
     /// Subscribe to level-one option data for the given symbols.
@@ -280,8 +287,7 @@ impl StreamingSession {
         symbols: &[&str],
         fields: &[OptionField],
     ) -> crate::Result<()> {
-        let field_indices = fields.iter().map(OptionField::index).collect::<Vec<_>>();
-        self.subscribe_service("3", "LEVELONE_OPTIONS", symbols, field_indices)
+        self.subscribe_service("3", "LEVELONE_OPTIONS", symbols, fields, OptionField::index)
             .await
     }
 
@@ -313,9 +319,14 @@ impl StreamingSession {
         symbols: &[&str],
         fields: &[FuturesField],
     ) -> crate::Result<()> {
-        let field_indices = fields.iter().map(FuturesField::index).collect::<Vec<_>>();
-        self.subscribe_service("4", "LEVELONE_FUTURES", symbols, field_indices)
-            .await
+        self.subscribe_service(
+            "4",
+            "LEVELONE_FUTURES",
+            symbols,
+            fields,
+            FuturesField::index,
+        )
+        .await
     }
 
     /// Subscribe to level-one futures option data for the given symbols.
@@ -346,12 +357,14 @@ impl StreamingSession {
         symbols: &[&str],
         fields: &[FuturesOptionField],
     ) -> crate::Result<()> {
-        let field_indices = fields
-            .iter()
-            .map(FuturesOptionField::index)
-            .collect::<Vec<_>>();
-        self.subscribe_service("5", "LEVELONE_FUTURES_OPTIONS", symbols, field_indices)
-            .await
+        self.subscribe_service(
+            "5",
+            "LEVELONE_FUTURES_OPTIONS",
+            symbols,
+            fields,
+            FuturesOptionField::index,
+        )
+        .await
     }
 
     /// Subscribe to level-one forex data for the given symbols.
@@ -382,8 +395,7 @@ impl StreamingSession {
         symbols: &[&str],
         fields: &[ForexField],
     ) -> crate::Result<()> {
-        let field_indices = fields.iter().map(ForexField::index).collect::<Vec<_>>();
-        self.subscribe_service("6", "LEVELONE_FOREX", symbols, field_indices)
+        self.subscribe_service("6", "LEVELONE_FOREX", symbols, fields, ForexField::index)
             .await
     }
 
@@ -415,12 +427,14 @@ impl StreamingSession {
         symbols: &[&str],
         fields: &[ChartEquityField],
     ) -> crate::Result<()> {
-        let field_indices = fields
-            .iter()
-            .map(ChartEquityField::index)
-            .collect::<Vec<_>>();
-        self.subscribe_service("7", "CHART_EQUITY", symbols, field_indices)
-            .await
+        self.subscribe_service(
+            "7",
+            "CHART_EQUITY",
+            symbols,
+            fields,
+            ChartEquityField::index,
+        )
+        .await
     }
 
     /// Subscribe to futures chart data for the given symbols.
@@ -451,12 +465,14 @@ impl StreamingSession {
         symbols: &[&str],
         fields: &[ChartFuturesField],
     ) -> crate::Result<()> {
-        let field_indices = fields
-            .iter()
-            .map(ChartFuturesField::index)
-            .collect::<Vec<_>>();
-        self.subscribe_service("8", "CHART_FUTURES", symbols, field_indices)
-            .await
+        self.subscribe_service(
+            "8",
+            "CHART_FUTURES",
+            symbols,
+            fields,
+            ChartFuturesField::index,
+        )
+        .await
     }
 
     /// Subscribe to equity screener data for the given keys.
@@ -491,12 +507,14 @@ impl StreamingSession {
         keys: &[&str],
         fields: &[ScreenerEquityField],
     ) -> crate::Result<()> {
-        let field_indices = fields
-            .iter()
-            .map(ScreenerEquityField::index)
-            .collect::<Vec<_>>();
-        self.subscribe_service("9", "SCREENER_EQUITY", keys, field_indices)
-            .await
+        self.subscribe_service(
+            "9",
+            "SCREENER_EQUITY",
+            keys,
+            fields,
+            ScreenerEquityField::index,
+        )
+        .await
     }
 
     /// Subscribe to option screener data for the given keys.
@@ -531,20 +549,23 @@ impl StreamingSession {
         keys: &[&str],
         fields: &[ScreenerOptionField],
     ) -> crate::Result<()> {
-        let field_indices = fields
-            .iter()
-            .map(ScreenerOptionField::index)
-            .collect::<Vec<_>>();
-        self.subscribe_service("10", "SCREENER_OPTION", keys, field_indices)
-            .await
+        self.subscribe_service(
+            "10",
+            "SCREENER_OPTION",
+            keys,
+            fields,
+            ScreenerOptionField::index,
+        )
+        .await
     }
 
-    async fn subscribe_service(
+    async fn subscribe_service<F>(
         &self,
         request_id: &str,
         service: &str,
         symbols: &[&str],
-        field_indices: Vec<u32>,
+        fields: &[F],
+        field_index: fn(&F) -> u32,
     ) -> crate::Result<()> {
         let symbols: Vec<&str> = symbols
             .iter()
@@ -554,6 +575,8 @@ impl StreamingSession {
         if symbols.is_empty() {
             return Err(crate::Error::EmptySymbols);
         }
+
+        let field_indices = fields.iter().map(field_index).collect::<Vec<_>>();
         if field_indices.is_empty() {
             return Err(crate::Error::StreamProtocol(
                 "at least one streaming field is required".to_string(),
