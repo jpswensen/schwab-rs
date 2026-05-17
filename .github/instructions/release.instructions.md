@@ -1,5 +1,5 @@
 ---
-applyTo: ".github/workflows/release-plz.yml"
+applyTo: ".github/workflows/cd.yml"
 ---
 
 # Release review instructions

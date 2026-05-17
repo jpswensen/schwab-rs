@@ -1,5 +1,10 @@
 [workspace]
-semver_check = true
+allow_dirty = true
+changelog_config = "cliff.toml"
 changelog_update = true
+dependencies_update = true
 git_release_enable = true
 git_tag_enable = true
+pr_labels = ["release"]
+publish_allow_dirty = true
+semver_check = true
