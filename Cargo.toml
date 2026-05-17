@@ -12,18 +12,18 @@ categories = ["api-bindings", "finance"]
 
 [dependencies]
 base64 = "0.22.1"
-rand = "0.10.0"
-rcgen = "0.14.0"
+rand = "0.10.1"
+rcgen = "0.14.8"
 reqwest = { version = "0.13.3", default-features = false, features = ["form", "json", "query", "rustls"] }
-rustls = { version = "0.23.35", default-features = false, features = ["ring", "std"] }
+rustls = { version = "0.23.40", default-features = false, features = ["ring", "std"] }
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.145"
+serde_json = "1.0.149"
 thiserror = "2.0.18"
 tracing = "0.1"
-tokio = { version = "1.48.0", features = ["macros", "rt", "sync", "time"] }
+tokio = { version = "1.52.3", features = ["macros", "rt", "sync", "time"] }
 urlencoding = "2.1.3"
 futures-util = "0.3"
-rust_decimal = { version = "1.37", features = ["serde-with-float"], optional = true }
+rust_decimal = { version = "1.42", features = ["serde-with-float"], optional = true }
 tokio-tungstenite = { version = "0.26", features = ["rustls-tls-native-roots"] }
 
 [features]
@@ -33,7 +33,7 @@ test_online = []
 [dev-dependencies]
 assert-json-diff = "2"
 mockito = "1"
-tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.52.3", features = ["macros", "rt-multi-thread"] }
 
 [package.metadata.docs.rs]
 all-features = true
