@@ -9,8 +9,8 @@ Structured JSON CLI for Charles Schwab API. All output is raw JSON data payloads
 ```bash
 export SCHWAB_CLIENT_ID="..."
 export SCHWAB_CLIENT_SECRET="..."
-# Token path defaults to $XDG_CONFIG_DIR/schwab-agent-rs/token.json for compatibility with existing installs
-# Override with SCHWAB_TOKEN_PATH if needed
+# Token path defaults to $XDG_CONFIG_HOME/schwab-agent-rs/token.json for compatibility with existing installs
+# Override with a non-empty SCHWAB_TOKEN_PATH if needed
 # Callback URL defaults to https://127.0.0.1:8182
 ```
 

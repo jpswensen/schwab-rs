@@ -164,7 +164,7 @@ Recommended LLM workflow: `expirations` (pick date) -> `chain` (with filters) ->
 
 Credentials are read from environment variables (`SCHWAB_CLIENT_ID`, `SCHWAB_CLIENT_SECRET`, `SCHWAB_CALLBACK_URL`) first, then from `~/.config/schwab-agent/config.json`. The callback URL defaults to `https://127.0.0.1:8182` when unset.
 
-Token path env var: `SCHWAB_TOKEN_PATH`. Default: `$XDG_CONFIG_DIR/schwab-agent-rs/token.json` for compatibility with existing agent installs.
+Token path env var: `SCHWAB_TOKEN_PATH`. Empty values are ignored. Default: `$XDG_CONFIG_HOME/schwab-agent-rs/token.json` for compatibility with existing agent installs, falling back to the platform config directory when `XDG_CONFIG_HOME` is unset.
 
 ## Output Format
 

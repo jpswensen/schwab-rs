@@ -50,19 +50,23 @@ async fn analyze_symbol(client: &Client, args: &AnalyzeArgs, symbol: &str) -> An
 
 async fn quote_result(client: &Client, symbol: &str) -> (Option<Value>, Option<String>) {
     match client.get_quote(symbol, None).await {
-        Ok(quote) => (Some(quote_map_to_value(quote)), None),
+        Ok(quote) => match quote_map_to_value(quote) {
+            Ok(value) => (Some(value), None),
+            Err(error) => (None, Some(error.to_string())),
+        },
         Err(error) => (None, Some(error.to_string())),
     }
 }
 
-#[must_use]
-fn quote_map_to_value(quotes: HashMap<String, QuoteResponseObject>) -> Value {
+fn quote_map_to_value(
+    quotes: HashMap<String, QuoteResponseObject>,
+) -> Result<Value, serde_json::Error> {
     let mut summaries: Vec<_> = quotes
         .into_iter()
         .map(|(symbol, quote)| market::summarize_quote(symbol, quote))
         .collect();
     summaries.sort_by(|left, right| left.requested_symbol.cmp(&right.requested_symbol));
-    serde_json::to_value(summaries).unwrap_or_default()
+    serde_json::to_value(summaries)
 }
 
 async fn dashboard_result(

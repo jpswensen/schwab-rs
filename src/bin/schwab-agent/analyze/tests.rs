@@ -2,6 +2,7 @@
 
 use serde_json::{Value, json};
 
+use super::quote_map_to_value;
 use crate::ta::types::{
     AdxPoint, AnalyzeOutput, AnalyzeSymbolResult, BbandsPoint, DashboardOutput, DerivedFields,
     MacdPoint, MomentumIndicators, MomentumSignal, SignalSummary, StochPoint, TaPoint,
@@ -109,6 +110,13 @@ fn analyze_output_serializes_to_json() {
     assert_eq!(value["results"][0]["symbol"], "AAPL");
     assert!(value["results"][0]["quote"].is_object());
     assert!(value["results"][0]["analysis"].is_object());
+}
+
+#[test]
+fn quote_map_to_value_serializes_empty_quotes() {
+    let value = quote_map_to_value(Default::default()).unwrap();
+
+    assert_eq!(value, json!([]));
 }
 
 fn successful_result(symbol: &str) -> AnalyzeSymbolResult {

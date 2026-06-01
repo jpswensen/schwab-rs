@@ -81,6 +81,10 @@ fn apply_filters(
     if let Some(contract_type) = normalized_contract_type(args.contract_type.as_deref())
         && contract_type != "ALL"
     {
+        contracts.retain(|contract| {
+            normalized_contract_type(Some(&contract.contract_type)).as_deref()
+                == Some(contract_type.as_str())
+        });
         filters_applied.push(format!("type = {contract_type}"));
     }
 
@@ -804,6 +808,26 @@ mod tests {
                 .unwrap()
                 .iter()
                 .any(|filter| filter == "strike = 95")
+        );
+    }
+
+    #[test]
+    fn screen_chain_contract_type_filters_rows() {
+        let mut args = default_screen_args("AAPL");
+        args.contract_type = Some("put".to_string());
+        args.fields = Some("symbol,type".to_string());
+
+        let output = screen_chain(&screen_chain_fixture(), &args).unwrap();
+
+        assert_eq!(output["rowCount"], 1);
+        assert_eq!(output["rows"][0][0], "AAPL  260116P00095000");
+        assert_eq!(output["rows"][0][1], "PUT");
+        assert!(
+            output["filtersApplied"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|filter| filter == "type = PUT")
         );
     }
 

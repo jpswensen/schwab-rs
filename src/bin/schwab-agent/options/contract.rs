@@ -113,6 +113,7 @@ pub(super) fn build_output(
     // Status
     map.insert("inTheMoney".into(), value_or_null(&flat.itm));
     map.insert("multiplier".into(), raw_field(raw, |c| c.multiplier));
+    // The typed Schwab option-chain contract model does not include exerciseType.
     map.insert("exerciseType".into(), Value::Null);
     map.insert(
         "settlementType".into(),

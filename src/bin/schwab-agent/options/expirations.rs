@@ -13,13 +13,15 @@ use crate::error::AppError;
 /// expiration type, and settlement type.
 #[cfg_attr(coverage_nightly, coverage(off))]
 pub async fn handle(client: &Client, symbol: &str) -> Result<Value, AppError> {
-    let chain =
-        client
-            .get_expiration_chain(symbol)
-            .await
-            .map_err(|_| AppError::OptionsSymbolNotFound {
+    let chain = client
+        .get_expiration_chain(symbol)
+        .await
+        .map_err(|error| match error {
+            schwab::Error::HttpStatus { status: 404, .. } => AppError::OptionsSymbolNotFound {
                 symbol: symbol.to_string(),
-            })?;
+            },
+            error => AppError::Schwab(error),
+        })?;
 
     let expirations = chain.expiration_list.unwrap_or_default();
     Ok(format_expirations(symbol, &expirations))

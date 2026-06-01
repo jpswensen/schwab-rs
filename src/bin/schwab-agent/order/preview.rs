@@ -200,10 +200,9 @@ pub fn load_preview(digest: &str, account_hash: &str) -> Result<SavedPreview, Ap
 
     // Verify account match.
     if payload.account_hash != account_hash {
-        return Err(AppError::Preview(format!(
-            "preview was for account '{}', but got account '{account_hash}'",
-            payload.account_hash
-        )));
+        return Err(AppError::Preview(
+            "preview account mismatch; regenerate preview for this account".to_string(),
+        ));
     }
 
     // Check TTL.
@@ -362,8 +361,12 @@ mod tests {
         assert_eq!(err.exit_code(), 11);
         match err {
             AppError::Preview(message) => {
-                assert!(message.contains("preview was for account 'HASH_A'"));
-                assert!(message.contains("got account 'HASH_B'"));
+                assert_eq!(
+                    message,
+                    "preview account mismatch; regenerate preview for this account"
+                );
+                assert!(!message.contains("HASH_A"));
+                assert!(!message.contains("HASH_B"));
             }
             other => panic!("expected AppError::Preview, got {other:?}"),
         }

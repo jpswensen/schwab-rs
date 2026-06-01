@@ -73,8 +73,8 @@ fn xdg_config_home() -> Option<PathBuf> {
 /// Returns the default OAuth token path.
 #[must_use]
 fn default_token_path() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
+    xdg_config_home()
+        .unwrap_or_else(|| dirs::config_dir().unwrap_or_else(|| PathBuf::from(".config")))
         .join("schwab-agent-rs")
         .join("token.json")
 }
@@ -84,6 +84,7 @@ fn default_token_path() -> PathBuf {
 #[must_use]
 pub(crate) fn token_path() -> PathBuf {
     std::env::var_os("SCHWAB_TOKEN_PATH")
+        .filter(|value| !value.is_empty())
         .map(PathBuf::from)
         .unwrap_or_else(default_token_path)
 }
@@ -282,6 +283,19 @@ mod tests {
         let path = token_path();
 
         assert!(path.ends_with("schwab-agent-rs/token.json"));
+    }
+
+    #[test]
+    fn token_path_empty_env_falls_back_to_xdg_config_home() {
+        let _lock = TEST_ENV_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let _token_path = EnvVarGuard::set("SCHWAB_TOKEN_PATH", "");
+        let _xdg_config_home = EnvVarGuard::set_path("XDG_CONFIG_HOME", dir.path());
+
+        assert_eq!(
+            token_path(),
+            dir.path().join("schwab-agent-rs").join("token.json")
+        );
     }
 
     #[test]
