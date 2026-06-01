@@ -218,6 +218,7 @@ Always run default, `decimal`, library no-default, and library no-default `decim
 ### Code Style
 
 - Every module uses `#[cfg(test)] mod tests;` - separate test files for auth, error, market, account; inline tests for lib, cli, output, preview, order/mod, order/equity, order/option, order/replace, order/workflow, verify, lifecycle, raw
+- `tests/cli_smoke.rs` uses `assert_cmd` and `predicates` to spawn the compiled `schwab-agent` binary for offline help output, clap usage errors, structured JSON error output, and dry-run order JSON checks
 - Docstrings on all public items and many private items
 - `#[must_use]` on pure functions
 - `serde_with::skip_serializing_none` for clean JSON output
