@@ -3,7 +3,7 @@
 > [!CAUTION]
 > **After every code change, update `AGENTS.md`, `src/AGENTS.md`, `src/models/AGENTS.md`, and `README.md` before considering the work done.** Stale docs mislead reviewers and AI agents. Treat doc updates as part of the change, not a follow-up. Verify claims (signatures, variant lists, line counts, examples) against the actual code - do not copy from memory or prior versions.
 
-Rust client library for the Charles Schwab brokerage API. Library crate only, no binaries.
+Rust client library for the Charles Schwab brokerage API plus the `schwab-agent` structured JSON CLI binary.
 
 ## Build and Test
 
@@ -15,8 +15,8 @@ make clippy         # clippy twice: default features + --features decimal
 make test           # cargo test twice: default features + --features decimal
 make doc            # RUSTDOCFLAGS with deny flags, cargo doc --no-deps
 make audit          # cargo audit
-make coverage       # cargo llvm-cov test --fail-under-lines 90
-make patch-coverage # cargo llvm-cov lcov + diff-cover against PATCH_COVERAGE_BASE
+make coverage       # nightly cargo llvm-cov test --fail-under-lines 90 with coverage_nightly cfg
+make patch-coverage # nightly cargo llvm-cov lcov + diff-cover against PATCH_COVERAGE_BASE
 make machete        # cargo machete unused dependency check
 make clean          # cargo clean and remove lcov.info
 ```
@@ -45,12 +45,16 @@ src/
   query.rs            # query string helpers
   stream_session/     # WebSocket protocol, transport, StreamingSession engine, inline mock-transport tests
   test_support.rs     # test-only helpers (n(), fixture())
+  bin/schwab-agent/   # agent-oriented JSON CLI, config, auth, market, account, order, option, TA, analyze commands
   models/             # see src/models/AGENTS.md
 ```
 
 ## Conventions
 
 - Public API: `Client` + typed async methods returning `schwab::Result<T>`
+- Binary target: `schwab-agent` at `src/bin/schwab-agent/main.rs`; CLI modules remain binary-private and may use documented CLI config, environment variables, JSON output, and process exit behavior without changing the library contract
+- `schwab-agent` ignores empty `SCHWAB_TOKEN_PATH` values, keeps the compatibility token default under `schwab-agent-rs/token.json`, and resolves the base from `XDG_CONFIG_HOME` before the platform config directory
+- `schwab-agent option screen` rejects non-finite numeric filter inputs before API calls, enforces normalized contract-type filters in output rows, and serializes numeric output through the active `Number` representation so default and `decimal` builds stay consistent
 - Root re-exports include `StreamingSession` plus streaming event, data, and field selector model types through `models::*`
 - All public async methods: `&self` receiver, `#[instrument(skip_all)]` tracing attribute
 - Two API bases: `MarketData` (`/marketdata/v1`) and `Trader` (`/trader/v1`) via `ApiBase` enum
@@ -83,6 +87,7 @@ src/
 - `auth.rs` callback URL restricted to `https://127.0.0.1` only
 - Token files: directory 0o700, file 0o600 permissions
 - Library must never call `process::exit`, write user-facing output, or read hidden config
+- `schwab-agent` mutable order commands must keep the config guard, resolve account selectors to canonical Schwab hashes, use preview/digest flows where appropriate, store saved previews with owner-only permissions, and verify order state after mutable actions
 - Flag any credential/token exposure in logs, errors, tests, or docs
 - Order methods must not invent safety shortcuts or silently mutate payloads
 
@@ -93,31 +98,32 @@ Runs on Ubuntu, macOS, Windows:
 - `clippy` (stable, 3 OS)
 - `test` (stable, 3 OS)
 - `msrv` (Rust 1.96, Ubuntu)
-- `coverage` (Ubuntu, cargo-llvm-cov 90% line coverage, uploads `lcov.info` to Codecov when `CODECOV_TOKEN` is present)
+- `coverage` (Ubuntu, nightly cargo-llvm-cov with `coverage_nightly` cfg, 90% line coverage, uploads `lcov.info` to Codecov when `CODECOV_TOKEN` is present)
 - `machete` (Ubuntu, cargo-machete unused dependency check)
 - `docs` (stable, Ubuntu)
 - `audit` (daily cron + on Cargo.toml/Cargo.lock changes)
 
 Coverage and machete CI jobs pin installed cargo tool versions and disable install-action fallback. A non-secret presence flag gates Codecov upload, the Codecov token is scoped only to the upload step, and generated `lcov.info` is ignored.
 
-Release: `release-plz` runs automatically on every push to `main` via `.github/workflows/cd.yml`. A single job handles both release PRs and publishing in one step.
+Release: `release-plz` runs automatically on every push to `main` via `.github/workflows/release-plz.yml` for release PRs and tag creation. Tag pushes trigger `.github/workflows/release.yml`, where cargo-dist builds binary artifacts, creates the GitHub Release, and publishes `schwab` to crates.io through Trusted Publishing.
 
-This repository exclusively uses crates.io Trusted Publishing with GitHub Actions OIDC (`id-token: write`) for all crate publishing. Never add `CARGO_REGISTRY_TOKEN` or any other long-lived registry token. The Trusted Publisher on crates.io is configured with workflow filename `cd.yml`. The workflow uses `RELEASE_PLZ_TOKEN` for GitHub operations (checkout, PR creation, tagging).
+This repository exclusively uses crates.io Trusted Publishing with GitHub Actions OIDC (`id-token: write`) for all crate publishing. Never add `CARGO_REGISTRY_TOKEN` or any other long-lived registry token. The Trusted Publisher on crates.io is configured with workflow filename `release.yml`. The release-plz workflow uses `RELEASE_PLZ_TOKEN` for GitHub operations (checkout, PR creation, tagging).
 
 Changelog generation uses git-cliff via `cliff.toml` with Conventional Commits grouping (features, bug fixes, docs, performance, refactor, styling, testing, miscellaneous, security, reverts). The template produces version comparison links and commit SHA links.
 
-Configuration lives in `release-plz.toml` (clean-tree enforcement, semver checking, changelog via cliff.toml, no release-time dependency updates, crates.io publishing, git tag and GitHub Release settings) and `cliff.toml` (git-cliff changelog template and commit parsing rules). Renovate owns dependency updates; release-plz only edits version and changelog content.
+Configuration lives in `release-plz.toml` (clean-tree enforcement, semver checking, changelog via cliff.toml, no release-time dependency updates, release PRs, and tag settings), `dist-workspace.toml` (cargo-dist binary packaging and publish orchestration), and `cliff.toml` (git-cliff changelog template and commit parsing rules). Renovate owns dependency updates; release-plz only edits version and changelog content.
 
 ### Release Workflow
 
 Automatic flow on push to `main`:
 
 1. Push commits to `main` using Conventional Commits (`feat:`, `fix:`, etc.)
-2. `cd.yml` triggers automatically and runs release-plz
+2. `release-plz.yml` triggers automatically and runs release-plz
 3. release-plz opens/updates a PR with the version bump and `CHANGELOG.md` entries (generated by git-cliff)
 4. Review and merge the release PR
-5. The merge triggers release-plz again, which detects the version bump, runs `cargo publish`, creates git tag and GitHub release
-6. Verify at `https://crates.io/crates/schwab`
+5. The merge triggers release-plz again, which detects the version bump and creates the git tag
+6. The tag triggers cargo-dist in `release.yml`, which builds `schwab-agent` artifacts, creates the GitHub Release, and publishes `schwab`
+7. Verify at `https://crates.io/crates/schwab`
 
 ### Manual Release Fallback
 
@@ -127,7 +133,7 @@ If release-plz is unavailable, version bumps can be done manually:
 2. Run `cargo update --workspace` to sync `Cargo.lock`
 3. Commit **both** `Cargo.toml` and `Cargo.lock` together (dirty `Cargo.lock` causes `cargo publish` to fail)
 4. Push to `main`
-5. Run `cargo publish` locally
+5. Let `release-plz.yml` create the tag and `release.yml` publish through cargo-dist, or run `cargo publish` locally only if the release automation is unavailable
 
 ## Review Instructions
 
@@ -140,6 +146,7 @@ When the code or project structure changes, keep these files updated to match:
 - `AGENTS.md` (this file), `src/AGENTS.md`, `src/models/AGENTS.md` - AI agent context
 - `CHANGELOG.md` - managed by release-plz automatically via release PRs
 - `release-plz.toml` - release-plz configuration (semver check, changelog, git release settings)
+- `dist-workspace.toml` - cargo-dist binary artifact and publish configuration
 - `cliff.toml` - git-cliff changelog template and commit parsing rules
 - `README.md` - user-facing usage docs and feature descriptions
 - `.coderabbit.yaml` - automated review configuration

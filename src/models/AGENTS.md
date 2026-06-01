@@ -13,6 +13,8 @@
 
 Everything is re-exported via `pub use` in `mod.rs`, then again via `models::*` at crate root.
 
+The `schwab-agent` binary under `src/bin/schwab-agent/` consumes these same model types for CLI output and order conversion. CLI formatting may add compact row-shaped views, persist preview payloads outside the model layer under `XDG_STATE_HOME` or platform state directories with owner-only file permissions, validate user-supplied numeric filters before model conversion, and enforce normalized contract-type filters in CLI rows, but it must not change the model-layer `Number`, serde, `Option<T>`, or enum conventions described here.
+
 ## Streaming Models
 
 - `StreamEvent` variants: `Data`, `Response`, `Heartbeat`, `Disconnected`, `Reconnecting`, `Reconnected`
@@ -43,7 +45,7 @@ All numeric fields in model structs use `Number`, never raw `f64` or `Decimal`. 
 ## Repository Automation Notes
 
 - Numeric model changes must pass tests with default `Number = f64` and with the `decimal` feature enabled
-- CI coverage and `make patch-coverage` enforce a 90% line threshold, use offline tests only, and must never enable `test_online`
+- CI coverage and `make patch-coverage` enforce a 90% line threshold with nightly `cargo llvm-cov` and the `coverage_nightly` cfg, use offline tests only, and must never enable `test_online`
 - `cargo machete` runs in CI and through `make machete`; model dependency changes may require updating imports or dependencies together
 - Generated `lcov.info` is ignored by git and CodeRabbit, and CI pins the installed coverage and machete tool versions with install-action fallback disabled
 
