@@ -118,7 +118,7 @@ reviews:
       instructions: |
         Makefile validation:
         - .PHONY declarations for all non-file targets
-        - Build targets should run cargo clippy and cargo test for the library and schwab-agent binary
+        - Build targets should validate default CLI-enabled builds plus library-only no-default builds; do not assume the binary exists when default features are disabled
         - Avoid flags that are already defaults
 
 chat:

@@ -13,6 +13,7 @@ The root library is a low-level API crate with typed request builders, transport
 - Package: `schwab`, binary: `schwab-agent`
 - Edition 2024, MSRV 1.96
 - Install published binary with `cargo install schwab --bin schwab-agent --locked`
+- Default feature: `cli` enables this binary and CLI-only dependencies. The library still builds with `default-features = false` without compiling `schwab-agent`.
 - Feature flag: `decimal` swaps the shared `Number` alias to `rust_decimal::Decimal`
 
 ## Source Layout
@@ -21,6 +22,7 @@ The root library is a low-level API crate with typed request builders, transport
 src/bin/schwab-agent/
   main.rs          - Binary entry point, module tree, run_from_env(), CLI dispatch, JSON output
   cli.rs           - clap derive CLI definition with subcommands and global args
+  completions.rs   - Shell completion script generation for the clap command tree
   output.rs        - ErrorBody struct for structured error JSON output
   shared.rs        - Shared types: SessionChoice, DurationChoice, to_number() helper
   config.rs        - Agent config: load shared config, mutable-operation guard
@@ -67,6 +69,7 @@ src/bin/schwab-agent/
   analyze/
     mod.rs           - Multi-symbol analyze command with partial-failure support
     tests.rs         - Analyze module tests
+SKILL.md            - Detailed LLM-facing command contract; root `SKILL.md` points here for discoverability
 ```
 
 ## Command Groups
@@ -78,6 +81,7 @@ src/bin/schwab-agent/
 - **option** - Option chain data (expirations, chain, screen, contract)
 - **ta** - Technical analysis (dashboard, expected-move)
 - **analyze** - Multi-symbol analysis with partial-failure support
+- **completions** - Raw shell completion scripts for bash, elvish, fish, powershell, and zsh
 
 ### Auth Callback Listener
 
@@ -168,7 +172,7 @@ Token path env var: `SCHWAB_TOKEN_PATH`. Empty values are ignored. Default: `$XD
 
 ## Output Format
 
-Commands output raw JSON data payloads directly (no wrapper). Errors output an `ErrorBody` JSON object with `code`, `message`, `category`, `retryable`, and `hint` fields.
+Commands output raw JSON data payloads directly (no wrapper). Errors output an `ErrorBody` JSON object with `code`, `message`, `category`, `retryable`, and `hint` fields. `completions` is the only raw stdout exception because shell completion scripts must not be JSON-wrapped; completion generation write failures emit a short stderr diagnostic and exit non-zero.
 
 ### Error Codes and Exit Codes
 
@@ -181,6 +185,7 @@ Commands output raw JSON data payloads directly (no wrapper). Errors output an `
 ## Key Dependencies
 
 - `clap` (derive) - CLI parsing
+- `clap_complete` - Shell completion script generation
 - `schwab` - Schwab API client
 - `reqwest` - Direct HTTP requests for raw API workarounds
 - `serde` / `serde_json` - Serialization
@@ -199,23 +204,24 @@ Use `make check` for the full suite. Individual targets:
 ```bash
 make fmt          # cargo fmt --all --check
 make fmt-fix      # cargo fmt --all
-make clippy       # Runs twice: default + --features decimal
+make clippy       # Runs default, decimal, library no-default, library no-default+decimal
                   # Flags: -D clippy::all -A clippy::needless_borrow -A clippy::large_enum_variant
-make test         # Runs twice: default + --features decimal
-make doc          # Checks for broken intra-doc links
+make test         # Runs default, decimal, library no-default, library no-default+decimal
+make doc          # Checks default docs and library no-default docs for broken intra-doc links
 make coverage     # nightly cargo llvm-cov test --fail-under-lines 90 with coverage_nightly cfg
 make patch-coverage # lcov + diff-cover, 100% changed-line threshold against main
 make audit        # cargo audit
 make check        # fmt + clippy + test + doc (aggregate)
 ```
 
-Always run both default and `decimal` feature configurations. CI does the same.
+Always run default, `decimal`, library no-default, and library no-default `decimal` feature configurations. CI does the same without enabling `test_online`.
 
 ## Conventions
 
 ### Code Style
 
 - Every module uses `#[cfg(test)] mod tests;` - separate test files for auth, error, market, account; inline tests for lib, cli, output, preview, order/mod, order/equity, order/option, order/replace, order/workflow, verify, lifecycle, raw
+- `tests/cli_smoke.rs` runs only with the `cli` feature and uses `assert_cmd` and `predicates` to spawn the compiled `schwab-agent` binary for offline help output, shell completions, clap usage errors, structured JSON error output, and hermetic dry-run order JSON checks
 - Docstrings on all public items and many private items
 - `#[must_use]` on pure functions
 - `serde_with::skip_serializing_none` for clean JSON output

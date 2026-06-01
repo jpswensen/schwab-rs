@@ -11,9 +11,9 @@ Rust client library for the Charles Schwab brokerage API plus the `schwab-agent`
 make check          # runs: fmt clippy test doc
 make fmt            # cargo fmt --all --check
 make fmt-fix        # cargo fmt --all
-make clippy         # clippy twice: default features + --features decimal
-make test           # cargo test twice: default features + --features decimal
-make doc            # RUSTDOCFLAGS with deny flags, cargo doc --no-deps
+make clippy         # clippy: default, decimal, library no-default, library no-default+decimal
+make test           # cargo test: default, decimal, library no-default, library no-default+decimal
+make doc            # RUSTDOCFLAGS with deny flags, default docs + library no-default docs
 make audit          # cargo audit
 make coverage       # nightly cargo llvm-cov test --fail-under-lines 90 with coverage_nightly cfg
 make patch-coverage # nightly cargo llvm-cov lcov + diff-cover against PATCH_COVERAGE_BASE
@@ -25,6 +25,7 @@ MSRV: 1.96. Edition: 2024. Always test with both default and `decimal` feature.
 
 ## Feature Flags
 
+- `cli`: default feature that enables the `schwab-agent` binary and CLI-only dependencies (`clap`, `clap_complete`, `dirs`, `open`, `sha2`). Library consumers can use `default-features = false` to avoid CLI dependencies.
 - `decimal`: swaps `Number` type alias from `f64` to `rust_decimal::Decimal`. All numeric model fields use `Number`, so both variants must compile and pass tests.
 - `test_online`: gates live integration tests against the real Schwab API. Never run in CI.
 
@@ -47,12 +48,14 @@ src/
   test_support.rs     # test-only helpers (n(), fixture())
   bin/schwab-agent/   # agent-oriented JSON CLI, config, auth, market, account, order, option, TA, analyze commands
   models/             # see src/models/AGENTS.md
+SKILL.md              # repository-level pointer to the schwab-agent LLM command guide
 ```
 
 ## Conventions
 
 - Public API: `Client` + typed async methods returning `schwab::Result<T>`
-- Binary target: `schwab-agent` at `src/bin/schwab-agent/main.rs`; CLI modules remain binary-private and may use documented CLI config, environment variables, JSON output, and process exit behavior without changing the library contract
+- Binary target: `schwab-agent` at `src/bin/schwab-agent/main.rs`, gated by the default `cli` feature; CLI modules remain binary-private and may use documented CLI config, environment variables, JSON output, and process exit behavior without changing the library contract
+- `schwab-agent completions <shell>` is the sole raw stdout exception to the JSON output contract because shells need an unwrapped completion script; completion generation write failures report a short stderr diagnostic and exit non-zero
 - `schwab-agent` ignores empty `SCHWAB_TOKEN_PATH` values, keeps the compatibility token default under `schwab-agent-rs/token.json`, and resolves the base from `XDG_CONFIG_HOME` before the platform config directory
 - `schwab-agent option screen` rejects non-finite numeric filter inputs before API calls, enforces normalized contract-type filters in output rows, and serializes numeric output through the active `Number` representation so default and `decimal` builds stay consistent
 - Root re-exports include `StreamingSession` plus streaming event, data, and field selector model types through `models::*`
@@ -79,6 +82,7 @@ src/
 - Async network methods use ` ```no_run ` fences with `# async fn example() -> schwab::Result<()> {` boilerplate
 - Sync builders and pure-logic items use plain ` ``` ` fences with compile-time assertions where possible
 - Examples must compile under both default and `decimal` features (use `"1.0".parse().unwrap()` for `Number` literals)
+- `tests/cli_smoke.rs` is gated to the default `cli` feature and uses `assert_cmd` and `predicates` for offline compiled-binary checks of help output, shell completions, clap usage errors, structured JSON errors, and hermetic dry-run order JSON.
 - Pattern assertions in tests use Rust 1.96's standard `assert_matches!` macro instead of `assert!(matches!(...))`
 
 ## Security (Non-Negotiable)
@@ -95,8 +99,8 @@ src/
 
 Runs on Ubuntu, macOS, Windows:
 - `fmt` (nightly rustfmt)
-- `clippy` (stable, 3 OS)
-- `test` (stable, 3 OS)
+- `clippy` (stable, 3 OS, default + `decimal` + library no-default + library no-default `decimal`)
+- `test` (stable, 3 OS, default + `decimal` + library no-default + library no-default `decimal`)
 - `msrv` (Rust 1.96, Ubuntu)
 - `coverage` (Ubuntu, nightly cargo-llvm-cov with `coverage_nightly` cfg, 90% line coverage, uploads `lcov.info` to Codecov when `CODECOV_TOKEN` is present)
 - `machete` (Ubuntu, cargo-machete unused dependency check)

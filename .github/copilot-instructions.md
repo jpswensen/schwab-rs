@@ -26,7 +26,7 @@ Focus on bugs, security, data loss, broken API contracts, and project convention
 
 ## schwab-agent CLI expectations
 
-- Command output is raw JSON data payloads; errors use `ErrorBody` with stable `code`, `message`, `category`, `retryable`, and `hint` fields.
+- Command output is raw JSON data payloads; errors use `ErrorBody` with stable `code`, `message`, `category`, `retryable`, and `hint` fields. `schwab-agent completions <shell>` is the sole raw stdout exception because shells need an unwrapped completion script.
 - Compact market outputs remain row-based by default. `market quote --all-fields` and `market history --all-fields` are legacy detailed-output escape hatches.
 - Compact quote rows must preserve per-symbol errors instead of dropping failed symbols.
 - Validate requested quote/history fields and other cheap user input before auth or API calls when possible.
@@ -40,10 +40,11 @@ Focus on bugs, security, data loss, broken API contracts, and project convention
 - Prefer descriptive test function names that explain the scenario being tested.
 - Keep generated response data inline unless fixtures clearly improve readability.
 - Verify request methods, paths, query parameters, headers, and decoded response fields.
+- `tests/cli_smoke.rs` runs only with the `cli` feature and checks compiled-binary help, shell completions, clap usage errors, structured JSON errors, and dry-run order JSON.
 
 ## Build and lint expectations
 
-- CI runs `make check`, which runs `cargo fmt --check`, `cargo clippy` (with and without the `decimal` feature), `cargo test` (with and without the `decimal` feature), and `cargo doc`.
+- CI runs `make check`, which runs `cargo fmt --check`, `cargo clippy`, `cargo test`, and `cargo doc` across default, `decimal`, library no-default, and library no-default plus `decimal` configurations. Do not use `--all-features` for routine checks because it enables `test_online`.
 - CI also runs pinned `cargo-llvm-cov` coverage with a 90% line threshold, pinned `cargo-machete`, no install-action fallback, and an optional Codecov upload gated by a non-secret presence flag with the token scoped only to the upload step.
 - Coverage and patch-coverage must not enable `test_online`; generated `lcov.info` is ignored and should not be committed.
 - Release automation is split: `release-plz` owns release PRs and tags, while cargo-dist owns GitHub Releases, binary artifacts, and crates.io publishing through Trusted Publishing.
