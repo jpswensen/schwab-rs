@@ -208,6 +208,36 @@ Run live tests only when you intentionally want network access:
 cargo test --features test_online
 ```
 
+## Development
+
+Use the Makefile for the same checks CI expects:
+
+```bash
+make check
+make coverage
+make patch-coverage
+make audit
+make machete
+```
+
+`make check` runs formatting, clippy, tests, and rustdoc checks. Clippy and tests run with default features and with `--features decimal` so the `Number` alias stays valid for both `f64` and `rust_decimal::Decimal`.
+
+`make coverage` runs offline tests through `cargo llvm-cov` and enforces 90% line coverage. It does not enable `test_online`, because live Schwab API tests require explicit credentials and must never run in CI.
+
+`make patch-coverage` generates `lcov.info` and runs `diff-cover` against `PATCH_COVERAGE_BASE` (default `main`) with `PATCH_COVERAGE_FAIL_UNDER` (default `100`). Set `DIFF_COVER` if you use `uvx diff-cover` or another wrapper.
+
+`make machete` runs `cargo machete` to catch unused dependencies before CI does.
+
+Generated `lcov.info` is ignored by git and CodeRabbit. CI pins the installed `cargo-llvm-cov` and `cargo-machete` versions, disables install-action fallback, gates Codecov upload with a non-secret presence flag, and scopes Codecov upload secrets only to the upload step.
+
+## Release automation
+
+release-plz runs through `.github/workflows/cd.yml`. It keeps a release PR current from Conventional Commits and the `cliff.toml` changelog configuration, refuses dirty working trees, and does not update dependencies because Renovate owns dependency bumps.
+
+When the release PR is merged, release-plz publishes `schwab` to crates.io with GitHub Actions OIDC Trusted Publishing, then creates the `v{{ version }}` git tag and GitHub Release. The crates.io Trusted Publisher is configured for workflow file `cd.yml`; never add `CARGO_REGISTRY_TOKEN` or another long-lived crates.io token.
+
+This crate is library-only and does not use cargo-dist, because there are no binary artifacts to package.
+
 ## API stability
 
 `schwab-rs` is pre-1.0. Public APIs may change while the crate tracks Schwab API behavior and fills out coverage for Market Data and Trader endpoints. Pin an exact crate version for production use.
