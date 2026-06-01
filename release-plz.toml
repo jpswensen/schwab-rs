@@ -1,10 +1,104 @@
+# release-plz configuration.
+# See https://release-plz.dev/docs/config
+#
+# Every supported `[workspace]` field we rely on is set explicitly so the
+# release contract is visible at a glance. Fields with no inherent default
+# (custom regexes, release_commits, repo_url) are intentionally omitted.
+
 [workspace]
-allow_dirty = true
+
+# --- Changelog ---------------------------------------------------------------
+
+# Reuse the existing git-cliff template instead of release-plz's built-in
+# changelog so formatting stays stable across releases.
 changelog_config = "cliff.toml"
+
+# Regenerate CHANGELOG.md when release-plz opens or updates a release PR.
 changelog_update = true
-dependencies_update = true
-git_release_enable = true
-git_tag_enable = true
-pr_labels = ["release"]
-publish_allow_dirty = true
+
+# --- Cargo / dependencies ----------------------------------------------------
+
+# Refuse to operate on a dirty working tree. release-plz creates its own
+# branch, so it should never see unrelated local changes.
+allow_dirty = false
+
+# Do not run `cargo update --workspace` in the release PR. Renovate owns
+# dependency bumps; release-plz only edits version and changelog content.
+dependencies_update = false
+
+# Treat new features as patch bumps on 0.x to keep proper SemVer semantics.
+# When the crate hits 1.0 we can revisit this.
+features_always_increment_minor = false
+
+# Run cargo-semver-checks against the library on every release.
 semver_check = true
+
+# --- Release gating ----------------------------------------------------------
+
+# Allow release-plz to perform releases when the release PR merges.
+release = true
+
+# Only release when the release PR (branch prefix `release-plz-`) merges.
+# Non-default. Avoids tag/publish races with squash-merged feature PRs, and
+# matches the intent of the upstream quickstart: human merges the release PR,
+# then release-plz publishes and tags.
+release_always = false
+
+# --- crates.io publishing ----------------------------------------------------
+
+# schwab-rs is a library-only crate, so release-plz publishes directly to
+# crates.io through GitHub Actions OIDC trusted publishing. Do not add a stored
+# CARGO_REGISTRY_TOKEN secret.
+publish = true
+
+# Do not bypass `cargo publish`'s clean-tree check.
+publish_allow_dirty = false
+
+# Do not pass `--no-verify` to `cargo publish`.
+publish_no_verify = false
+
+# Do not enable `--all-features` during `cargo publish` verification.
+publish_all_features = false
+
+# Allow up to 30 minutes for `cargo publish` to complete.
+publish_timeout = "30m"
+
+# --- Git tag -----------------------------------------------------------------
+
+# Push an annotated tag when the release PR merges.
+git_tag_enable = true
+
+# Tag format. Single-crate default is `v{{ version }}` (e.g. v0.4.1).
+git_tag_name = "v{{ version }}"
+
+# Detect the currently published version via the cargo registry (Cargo.toml +
+# crates.io), not via existing git tags.
+git_only = false
+
+# --- GitHub Release ----------------------------------------------------------
+
+# Create the GitHub Release from the release-plz changelog because this crate
+# does not have cargo-dist binary artifacts.
+git_release_enable = true
+git_release_name = "v{{ version }}"
+git_release_body = "{{ changelog }}"
+git_release_type = "prod"
+git_release_draft = false
+git_release_latest = true
+
+# --- Release PR --------------------------------------------------------------
+
+# `release_always = false` requires the branch prefix to be `release-plz-`
+# (hardcoded in release-plz). Keep the default; do not rename.
+pr_branch_prefix = "release-plz-"
+
+# Open the release PR as ready-for-review, not draft.
+pr_draft = false
+
+# Single-crate default PR title. Matches the release commit on main after
+# squash-merge: `chore: release v<version>`. cliff.toml skips this commit
+# subject so it does not pollute the next release's changelog.
+pr_name = "chore: release v{{ version }}"
+
+# Do not attach labels to the release PR by default.
+pr_labels = []
