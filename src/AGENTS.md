@@ -171,6 +171,10 @@ Internal functions for building query parameter vectors:
   - `fixture(name)` - load JSON from `tests/fixtures/{name}.json`
 - Live integration tests in `tests/integration.rs`, gated behind `#[cfg(feature = "test_online")]`
 - Always run tests with both default features and `--features decimal`
+- CI and local coverage use `cargo llvm-cov` with offline tests only and must not enable `test_online`
+- `make patch-coverage` writes `lcov.info` and uses `diff-cover` against `PATCH_COVERAGE_BASE` (default `main`) so changed lines stay tested
+- `make machete` and the CI `machete` job run `cargo machete` for unused dependency checks
+- Generated `lcov.info` is ignored by CodeRabbit path filters and should not be reviewed as source
 
 ## Keeping Documentation Current
 
