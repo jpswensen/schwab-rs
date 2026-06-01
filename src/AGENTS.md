@@ -165,7 +165,7 @@ Internal functions for building query parameter vectors:
 ## Test Patterns
 
 - Inline `#[cfg(test)] mod tests` blocks in each source file
-- Compiled-binary smoke tests live in `tests/cli_smoke.rs` and use `assert_cmd` plus `predicates` for offline help, shell completion, clap error, structured error JSON, and dry-run order checks
+- Compiled-binary smoke tests live in `tests/cli_smoke.rs`, run only when the `cli` feature is enabled, and use `assert_cmd` plus `predicates` for offline help, shell completion, clap error, structured error JSON, and hermetic dry-run order checks
 - `mockito` for HTTP mocking: create a mock server, set expectations, verify request shape
 - Streaming tests use inline `MockTransport` plus golden fixtures under `tests/fixtures/streaming_*.json`; keep them offline and deterministic
 - Tests verify: HTTP method, path, query params, headers, request body, response deserialization

@@ -1,3 +1,5 @@
+#![cfg(feature = "cli")]
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use serde_json::Value;
@@ -77,7 +79,15 @@ fn missing_token_error_is_structured_json() {
 
 #[test]
 fn dry_run_equity_order_outputs_order_json_without_auth() {
+    let tempdir = tempfile::tempdir().expect("temporary directory");
+    let token_path = tempdir.path().join("unused-token.json");
+
     let output = agent()
+        .env("SCHWAB_TOKEN_PATH", &token_path)
+        .env("XDG_CONFIG_HOME", tempdir.path())
+        .env_remove("SCHWAB_CLIENT_ID")
+        .env_remove("SCHWAB_CLIENT_SECRET")
+        .env_remove("SCHWAB_CALLBACK_URL")
         .args([
             "order", "equity", "buy", "AAPL", "-q", "10", "--price", "150.00",
         ])

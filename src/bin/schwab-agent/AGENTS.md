@@ -81,7 +81,7 @@ SKILL.md            - Detailed LLM-facing command contract; root `SKILL.md` poin
 - **option** - Option chain data (expirations, chain, screen, contract)
 - **ta** - Technical analysis (dashboard, expected-move)
 - **analyze** - Multi-symbol analysis with partial-failure support
-- **completions** - Raw shell completion scripts for bash, elvish, fish, PowerShell, and zsh
+- **completions** - Raw shell completion scripts for bash, elvish, fish, powershell, and zsh
 
 ### Auth Callback Listener
 
@@ -221,7 +221,7 @@ Always run default, `decimal`, library no-default, and library no-default `decim
 ### Code Style
 
 - Every module uses `#[cfg(test)] mod tests;` - separate test files for auth, error, market, account; inline tests for lib, cli, output, preview, order/mod, order/equity, order/option, order/replace, order/workflow, verify, lifecycle, raw
-- `tests/cli_smoke.rs` uses `assert_cmd` and `predicates` to spawn the compiled `schwab-agent` binary for offline help output, shell completions, clap usage errors, structured JSON error output, and dry-run order JSON checks
+- `tests/cli_smoke.rs` runs only with the `cli` feature and uses `assert_cmd` and `predicates` to spawn the compiled `schwab-agent` binary for offline help output, shell completions, clap usage errors, structured JSON error output, and hermetic dry-run order JSON checks
 - Docstrings on all public items and many private items
 - `#[must_use]` on pure functions
 - `serde_with::skip_serializing_none` for clean JSON output

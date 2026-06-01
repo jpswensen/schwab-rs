@@ -269,7 +269,7 @@ make machete
 
 `make check` runs formatting, clippy, tests, and rustdoc checks. Clippy and tests run with default features, with `--features decimal`, with `--lib --no-default-features`, and with `--lib --no-default-features --features decimal` so the `Number` alias stays valid and library consumers can build without CLI dependencies.
 
-Offline tests include compiled-binary smoke checks for `schwab-agent` help output, shell completions, clap usage errors, structured JSON error output, and dry-run order payloads. Live Schwab API tests remain gated behind `test_online`.
+Offline tests include `cli` feature-gated compiled-binary smoke checks for `schwab-agent` help output, shell completions, clap usage errors, structured JSON error output, and hermetic dry-run order payloads. Live Schwab API tests remain gated behind `test_online`.
 
 `make coverage` runs offline tests through nightly `cargo llvm-cov` with the `coverage_nightly` cfg enabled and enforces 90% line coverage. It does not enable `test_online`, because live Schwab API tests require explicit credentials and must never run in CI.
 
