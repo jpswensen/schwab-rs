@@ -45,6 +45,7 @@ All numeric fields in model structs use `Number`, never raw `f64` or `Decimal`. 
 - Numeric model changes must pass tests with default `Number = f64` and with the `decimal` feature enabled
 - CI coverage and `make patch-coverage` use offline tests only and must never enable `test_online`
 - `cargo machete` runs in CI and through `make machete`; model dependency changes may require updating imports or dependencies together
+- Generated `lcov.info` is ignored by git and CodeRabbit, and CI pins the installed coverage and machete tool versions with install-action fallback disabled
 
 ## Type Design Rules
 

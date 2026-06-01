@@ -98,6 +98,8 @@ Runs on Ubuntu, macOS, Windows:
 - `docs` (stable, Ubuntu)
 - `audit` (daily cron + on Cargo.toml/Cargo.lock changes)
 
+Coverage and machete CI jobs pin installed cargo tool versions and disable install-action fallback. A non-secret presence flag gates Codecov upload, the Codecov token is scoped only to the upload step, and generated `lcov.info` is ignored.
+
 Release: `release-plz` runs automatically on every push to `main` via `.github/workflows/cd.yml`. A single job handles both release PRs and publishing in one step.
 
 This repository exclusively uses crates.io Trusted Publishing with GitHub Actions OIDC (`id-token: write`) for all crate publishing. Never add `CARGO_REGISTRY_TOKEN` or any other long-lived registry token. The Trusted Publisher on crates.io is configured with workflow filename `cd.yml`. The workflow uses `RELEASE_PLZ_TOKEN` for GitHub operations (checkout, PR creation, tagging).

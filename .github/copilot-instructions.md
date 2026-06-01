@@ -32,6 +32,8 @@ Focus on bugs, security, data loss, broken API contracts, and project convention
 ## Build and lint expectations
 
 - CI runs `make check`, which runs `cargo fmt --check`, `cargo clippy` (with and without the `decimal` feature), `cargo test` (with and without the `decimal` feature), and `cargo doc`.
+- CI also runs pinned `cargo-llvm-cov` coverage with a 90% line threshold, pinned `cargo-machete`, no install-action fallback, and an optional Codecov upload gated by a non-secret presence flag with the token scoped only to the upload step.
+- Coverage and patch-coverage must not enable `test_online`; generated `lcov.info` is ignored and should not be committed.
 - Release automation uses `release-plz` because this repository is a library.
 - Clippy allow attributes require a specific lint name and an explanation.
 - US English spelling is enforced.

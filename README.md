@@ -228,6 +228,8 @@ make machete
 
 `make machete` runs `cargo machete` to catch unused dependencies before CI does.
 
+Generated `lcov.info` is ignored by git and CodeRabbit. CI pins the installed `cargo-llvm-cov` and `cargo-machete` versions, disables install-action fallback, gates Codecov upload with a non-secret presence flag, and scopes Codecov upload secrets only to the upload step.
+
 ## Release automation
 
 release-plz runs through `.github/workflows/cd.yml`. It keeps a release PR current from Conventional Commits and the `cliff.toml` changelog configuration, refuses dirty working trees, and does not update dependencies because Renovate owns dependency bumps.
