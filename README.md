@@ -1,8 +1,8 @@
 # schwab-rs
 
-Rust client library for the [Schwab API](https://developer.schwab.com/).
+Rust client library and `schwab-agent` structured JSON CLI for the [Schwab API](https://developer.schwab.com/).
 
-Wraps the Schwab Market Data and Trader REST APIs with typed methods and models so callers don't need to build URLs or parse raw JSON.
+Wraps the Schwab Market Data and Trader REST APIs with typed methods and models so callers don't need to build URLs or parse raw JSON. The same crate also ships `schwab-agent`, an agent-oriented CLI for auth, market data, account discovery, option workflows, technical analysis, and guarded order actions.
 
 > [!IMPORTANT]
 > `schwab-rs` is an unofficial project. It is not affiliated with, endorsed by, or sponsored by Charles Schwab & Co., Inc., Schwab brokerage services, or thinkorswim.
@@ -16,6 +16,7 @@ Wraps the Schwab Market Data and Trader REST APIs with typed methods and models 
 - **Typed order statuses** - known lifecycle states such as `WORKING`, `FILLED`, `CANCELED`, and `REJECTED` deserialize to typed variants, with an `Unknown` fallback for future Schwab values
 - **Streaming** - WebSocket session engine for account activity, level-one equities, options, futures, futures options, forex, chart equity, chart futures, screener equity, and screener option with broadcast events and automatic reconnect
 - **OAuth2 auth** - PKCE authorization code flow, file-backed token storage, automatic refresh via `Provider`
+- **schwab-agent CLI** - structured JSON command-line workflows for auth, quotes, history, accounts, orders, options, technical analysis, and multi-symbol analysis
 - **Async** - built on `tokio` and `reqwest` with `rustls` for TLS
 
 ## Quick start
@@ -24,7 +25,7 @@ Add `schwab` from crates.io:
 
 ```toml
 [dependencies]
-schwab = "0.1"
+schwab = "0.3"
 ```
 
 ```rust
@@ -65,6 +66,41 @@ cargo run --example auth
 The auth example writes a token file that `Provider::from_token_file` can refresh and turn into a ready-to-use `Client`. See [`docs/auth.md`](docs/auth.md), [`examples/auth.rs`](examples/auth.rs), and [`examples/quotes.rs`](examples/quotes.rs) for the full flow.
 
 Do not commit Schwab client secrets, authorization codes, access tokens, refresh tokens, token files, or account data. Prefer environment variables or a secret manager for credentials, and see [`SECURITY.md`](SECURITY.md) for reporting and token-handling guidance.
+
+## schwab-agent CLI
+
+Install the bundled JSON CLI from the published crate:
+
+```bash
+cargo install schwab --bin schwab-agent --locked
+```
+
+`schwab-agent` prints raw JSON payloads on success and structured JSON errors with stable `code`, `message`, `category`, `retryable`, and `hint` fields on failure. Credentials come from `SCHWAB_CLIENT_ID`, `SCHWAB_CLIENT_SECRET`, and optional `SCHWAB_CALLBACK_URL`, or from `~/.config/schwab-agent/config.json`. The token path can be overridden with `SCHWAB_TOKEN_PATH`; the default remains `$XDG_CONFIG_DIR/schwab-agent-rs/token.json` for compatibility with existing agent installs.
+
+```bash
+schwab-agent auth login-url
+schwab-agent auth exchange --redirect-url "CALLBACK_URL_WITH_CODE"
+schwab-agent auth refresh
+
+schwab-agent market quote AAPL MSFT --fields sym,last,pct,vol
+schwab-agent market quote AAPL --all-fields
+schwab-agent market history SPY --fields ts,close,vol
+
+schwab-agent account --positions
+schwab-agent option expirations AAPL
+schwab-agent option chain AAPL --type call --dte 30 --fields strike,delta,bid,ask,volume,oi
+schwab-agent option screen AAPL --type call --min-bid 1.00 --max-spread-pct 10
+schwab-agent ta dashboard SPY
+```
+
+Option screen numeric filters reject non-finite values such as `NaN` and infinity before making API calls, and screen output serializes numeric values through the crate's active `Number` type so default and `decimal` builds stay consistent.
+
+Mutable order commands are disabled unless `~/.config/schwab-agent/config.json` contains `"i-also-like-to-live-dangerously": true`. The recommended agent workflow is preview-first: save an order preview to get a digest, then submit the saved payload by digest after review. Saved previews use owner-only file permissions, but they are tamper-evident rather than encrypted. Mutable actions resolve account nicknames to canonical Schwab hashes and perform best-effort post-action order verification.
+
+```bash
+schwab-agent order equity buy AAPL -q 10 --price 180.00 --account HASH --save-preview
+schwab-agent order place-from-preview --account HASH --digest DIGEST_HEX
+```
 
 ## Order builder
 
@@ -222,7 +258,7 @@ make machete
 
 `make check` runs formatting, clippy, tests, and rustdoc checks. Clippy and tests run with default features and with `--features decimal` so the `Number` alias stays valid for both `f64` and `rust_decimal::Decimal`.
 
-`make coverage` runs offline tests through `cargo llvm-cov` and enforces 90% line coverage. It does not enable `test_online`, because live Schwab API tests require explicit credentials and must never run in CI.
+`make coverage` runs offline tests through nightly `cargo llvm-cov` with the `coverage_nightly` cfg enabled and enforces 90% line coverage. It does not enable `test_online`, because live Schwab API tests require explicit credentials and must never run in CI.
 
 `make patch-coverage` generates `lcov.info` and runs `diff-cover` against `PATCH_COVERAGE_BASE` (default `main`) with `PATCH_COVERAGE_FAIL_UNDER` (default `100`). Set `DIFF_COVER` if you use `uvx diff-cover` or another wrapper.
 
@@ -232,11 +268,9 @@ Generated `lcov.info` is ignored by git and CodeRabbit. CI pins the installed `c
 
 ## Release automation
 
-release-plz runs through `.github/workflows/cd.yml`. It keeps a release PR current from Conventional Commits and the `cliff.toml` changelog configuration, refuses dirty working trees, and does not update dependencies because Renovate owns dependency bumps.
+release-plz runs through `.github/workflows/release-plz.yml`. It keeps a release PR current from Conventional Commits and the `cliff.toml` changelog configuration, refuses dirty working trees, and does not update dependencies because Renovate owns dependency bumps.
 
-When the release PR is merged, release-plz publishes `schwab` to crates.io with GitHub Actions OIDC Trusted Publishing, then creates the `v{{ version }}` git tag and GitHub Release. The crates.io Trusted Publisher is configured for workflow file `cd.yml`; never add `CARGO_REGISTRY_TOKEN` or another long-lived crates.io token.
-
-This crate is library-only and does not use cargo-dist, because there are no binary artifacts to package.
+When the release PR is merged, release-plz creates the version tag. That tag triggers `.github/workflows/release.yml`, where cargo-dist builds `schwab-agent` binary artifacts, creates the GitHub Release, and publishes `schwab` to crates.io with GitHub Actions OIDC Trusted Publishing. The crates.io Trusted Publisher is configured for workflow file `release.yml`; never add `CARGO_REGISTRY_TOKEN` or another long-lived crates.io token.
 
 ## API stability
 

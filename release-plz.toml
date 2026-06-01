@@ -46,10 +46,10 @@ release_always = false
 
 # --- crates.io publishing ----------------------------------------------------
 
-# schwab-rs is a library-only crate, so release-plz publishes directly to
-# crates.io through GitHub Actions OIDC trusted publishing. Do not add a stored
-# CARGO_REGISTRY_TOKEN secret.
-publish = true
+# release-plz only opens release PRs and pushes tags. cargo-dist owns crates.io
+# publishing from `.github/workflows/release.yml` so binary artifacts and the
+# crate publish happen from the same release tag.
+publish = false
 
 # Do not bypass `cargo publish`'s clean-tree check.
 publish_allow_dirty = false
@@ -77,14 +77,9 @@ git_only = false
 
 # --- GitHub Release ----------------------------------------------------------
 
-# Create the GitHub Release from the release-plz changelog because this crate
-# does not have cargo-dist binary artifacts.
-git_release_enable = true
-git_release_name = "v{{ version }}"
-git_release_body = "{{ changelog }}"
-git_release_type = "prod"
-git_release_draft = false
-git_release_latest = true
+# cargo-dist creates the GitHub Release with binary artifacts after release-plz
+# pushes the version tag.
+git_release_enable = false
 
 # --- Release PR --------------------------------------------------------------
 

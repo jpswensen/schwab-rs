@@ -2,6 +2,7 @@
 
 CLIPPY_FLAGS := -D clippy::all -A clippy::needless_borrow -A clippy::large_enum_variant
 RUSTDOCFLAGS := -D rustdoc::broken-intra-doc-links -D rustdoc::private-intra-doc-links
+COVERAGE_RUSTFLAGS := --cfg coverage_nightly
 PATCH_COVERAGE_BASE ?= main
 PATCH_COVERAGE_FAIL_UNDER ?= 100
 DIFF_COVER ?= diff-cover
@@ -26,10 +27,10 @@ doc:
 	RUSTDOCFLAGS="$(RUSTDOCFLAGS)" cargo doc --no-deps
 
 coverage:
-	cargo llvm-cov test --fail-under-lines 90
+	RUSTFLAGS="$(COVERAGE_RUSTFLAGS)" cargo +nightly llvm-cov test --fail-under-lines 90
 
 patch-coverage:
-	cargo llvm-cov --workspace --fail-under-lines 90 --lcov --output-path lcov.info
+	RUSTFLAGS="$(COVERAGE_RUSTFLAGS)" cargo +nightly llvm-cov --workspace --fail-under-lines 90 --lcov --output-path lcov.info
 	$(DIFF_COVER) lcov.info --compare-branch=$(PATCH_COVERAGE_BASE) --fail-under=$(PATCH_COVERAGE_FAIL_UNDER)
 
 audit:

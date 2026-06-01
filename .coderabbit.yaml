@@ -58,6 +58,18 @@ reviews:
         - Keep account hashes, tokens, and credentials out of logs, errors, tests, and docs
         - Don't nitpick style because rustfmt and clippy handle formatting and lint
 
+    - path: "src/bin/schwab-agent/**/*.rs"
+      instructions: |
+        schwab-agent CLI review:
+        - This is the JSON CLI binary embedded in the schwab crate, not public library API
+        - Primary command output must stay structured JSON; errors must use the stable ErrorBody shape
+        - Compact market outputs should remain row-based by default, with --all-fields as the detailed escape hatch
+        - Keep clap-derived commands explicit and typed; avoid ad-hoc argument parsing
+        - Mutable order paths must preserve the config safety guard, resolve account selectors to canonical Schwab account hashes, and verify post-action state
+        - Position and order output must include actionable identifiers without leaking credentials, bearer tokens, raw account numbers, or account hashes in diagnostics
+        - Per-symbol quote errors must survive compact output instead of being dropped
+        - Validate quote fields and other user input before authentication or API calls when possible
+
     - path: "src/market_data_api.rs"
       instructions: |
         Market Data API review:
@@ -106,7 +118,7 @@ reviews:
       instructions: |
         Makefile validation:
         - .PHONY declarations for all non-file targets
-        - Build targets should run cargo clippy and cargo test because this is a library
+        - Build targets should run cargo clippy and cargo test for the library and schwab-agent binary
         - Avoid flags that are already defaults
 
 chat:
