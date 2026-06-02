@@ -122,7 +122,7 @@ This repository exclusively uses crates.io Trusted Publishing with GitHub Action
 
 Changelog generation uses git-cliff via `cliff.toml` with Conventional Commits grouping (features, bug fixes, docs, performance, refactor, styling, testing, miscellaneous, security, reverts). The template produces version comparison links and commit SHA links.
 
-Configuration lives in `release-plz.toml` (clean-tree enforcement, semver checking, changelog via cliff.toml, no release-time dependency updates, release PRs, and tag settings), `dist-workspace.toml` (cargo-dist binary packaging and publish orchestration), and `cliff.toml` (git-cliff changelog template and commit parsing rules). Renovate owns dependency updates through the org-level inherited config, so this repo intentionally does not carry a per-repo `renovate.json`; release-plz only edits version and changelog content.
+Configuration lives in `release-plz.toml` (clean-tree enforcement, semver checking, changelog via cliff.toml, no release-time dependency updates, release PRs, and tag settings), `dist-workspace.toml` (cargo-dist binary packaging and publish orchestration), and `cliff.toml` (git-cliff changelog template and commit parsing rules). Renovate owns dependency updates through the org-level inherited config, so this repo intentionally does not carry a per-repo `renovate.json`; verify that state with `npx --yes --package renovate renovate-config-validator` before changing Renovate policy. release-plz only edits version and changelog content.
 
 ### Release Workflow
 
@@ -156,7 +156,7 @@ When the code or project structure changes, keep these files updated to match:
 
 - `AGENTS.md` (this file), `src/AGENTS.md`, `src/models/AGENTS.md` - AI agent context
 - `CHANGELOG.md` - managed by release-plz automatically via release PRs
-- Renovate config - inherited from the org-level shared config; do not re-add per-repo `renovate.json` unless this repo needs an override
+- Renovate config - inherited from the org-level shared config; validate with `npx --yes --package renovate renovate-config-validator` and do not re-add per-repo `renovate.json` unless this repo needs an override
 - `release-plz.toml` - release-plz configuration (semver check, changelog, git release settings)
 - `dist-workspace.toml` - cargo-dist binary artifact and publish configuration
 - `cliff.toml` - git-cliff changelog template and commit parsing rules
