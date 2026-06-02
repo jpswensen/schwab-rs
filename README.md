@@ -288,7 +288,7 @@ Keep source, docs, fixtures, and copied API reference text ASCII unless the Schw
 
 ## Release automation
 
-release-plz runs through `.github/workflows/release-plz.yml`. It keeps a release PR current from Conventional Commits and the `cliff.toml` changelog configuration, refuses dirty working trees, and does not update dependencies because Renovate owns dependency bumps.
+release-plz runs through `.github/workflows/release-plz.yml`. It keeps a release PR current from Conventional Commits and the `cliff.toml` changelog configuration, refuses dirty working trees, and does not update dependencies because Renovate owns dependency bumps through the org-level inherited config. This repo intentionally has no per-repo `renovate.json` unless a future repo-specific override is needed.
 
 When the release PR is merged, release-plz creates the version tag. That tag triggers `.github/workflows/release.yml`, where cargo-dist builds `schwab-agent` binary artifacts, creates the GitHub Release, and publishes `schwab` to crates.io with GitHub Actions OIDC Trusted Publishing. The crates.io Trusted Publisher is configured for workflow file `release.yml`; never add `CARGO_REGISTRY_TOKEN` or another long-lived crates.io token.
 
