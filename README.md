@@ -13,7 +13,7 @@ Wraps the Schwab Market Data and Trader REST APIs with typed methods and models 
 - **Trader** - accounts, orders (place/replace/cancel/preview), transactions, user preferences
 - **Order builder** - typed equity helpers, single-leg option helpers, OCO, and first-triggers-second order composition
 - **Repeat orders** - convert supported historical `Order` responses into `OrderBuilder` payloads for reuse
-- **Typed order statuses** - known lifecycle states such as `WORKING`, `FILLED`, `CANCELED`, and `REJECTED` deserialize to typed variants, with an `Unknown` fallback for future Schwab values
+- **Typed order states** - known lifecycle statuses such as `WORKING`, `FILLED`, `CANCELED`, and `REJECTED`, plus order activity execution types such as `FILL` and `CANCELED`, deserialize to typed variants with `Unknown` fallbacks for future Schwab values
 - **Streaming** - WebSocket session engine for account activity, level-one equities, options, futures, futures options, forex, chart equity, chart futures, screener equity, and screener option with broadcast events and automatic reconnect
 - **OAuth2 auth** - PKCE authorization code flow, file-backed token storage, automatic refresh via `Provider`
 - **schwab-agent CLI** - structured JSON command-line workflows for auth, quotes, history, accounts, orders, options, technical analysis, and multi-symbol analysis

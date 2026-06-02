@@ -1291,6 +1291,23 @@ mod tests {
         );
     }
 
+    /// Execution type accepts filled/canceled activity and future unknown variants.
+    #[test]
+    fn deserialize_execution_type_variants() {
+        assert_eq!(
+            serde_json::from_str::<ExecutionType>(r#""FILL""#).unwrap(),
+            ExecutionType::Fill
+        );
+        assert_eq!(
+            serde_json::from_str::<ExecutionType>(r#""CANCELED""#).unwrap(),
+            ExecutionType::Canceled
+        );
+        assert_eq!(
+            serde_json::from_str::<ExecutionType>(r#""NOT_DOCUMENTED_YET""#).unwrap(),
+            ExecutionType::Unknown
+        );
+    }
+
     /// Transaction with a TransferItem containing a typed TransactionInstrument.
     /// Verifies the full nesting: Transaction -> TransferItem -> TransactionInstrument.
     #[test]
