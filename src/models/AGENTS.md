@@ -72,6 +72,7 @@ Schwab may add new variants at any time. Every enum in `enums.rs` gets `#[non_ex
 - Add `Serialize` to enums that appear in request payloads or query parameters
 - Use `Eq` only when all fields support it (no `Number`/`f64` fields)
 - `OrderStatus::Unknown` is the serde fallback for undocumented Schwab order status strings; keep known order lifecycle statuses as explicit variants when Schwab documents or returns them.
+- `ExecutionType::Unknown` is the serde fallback for undocumented Schwab order activity execution type strings; keep known execution types such as `Fill` and `Canceled` as explicit variants when Schwab documents or returns them.
 - `OrderType::Unknown` is response-only and must not be converted into `OrderTypeRequest`; repeat-order conversion returns `Error::OrderConversion` for it.
 
 ## Serde Patterns

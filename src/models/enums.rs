@@ -529,6 +529,9 @@ pub enum OrderActivityType {
 #[allow(missing_docs)]
 pub enum ExecutionType {
     Fill,
+    Canceled,
+    #[serde(other)]
+    Unknown,
 }
 
 /// Dividend and capital gains handling method.
