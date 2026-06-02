@@ -17,6 +17,18 @@ fn help_contains(args: &[&str], expected: &[&str]) {
     }
 }
 
+fn json_usage_error(args: &[&str]) -> Value {
+    let output = agent()
+        .env("SCHWAB_AGENT_JSON_ERRORS", "1")
+        .args(args)
+        .output()
+        .expect("command runs");
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stderr.is_empty());
+    serde_json::from_slice(&output.stdout).expect("stdout is JSON")
+}
+
 #[test]
 fn help_lists_command_groups() {
     agent()
@@ -125,6 +137,74 @@ fn invalid_flag_reports_clap_usage_error() {
         .code(2)
         .stderr(predicate::str::contains("unexpected argument"))
         .stderr(predicate::str::contains("Usage:"));
+}
+
+#[test]
+fn unknown_subcommand_reports_json_usage_error_when_requested() {
+    let body = json_usage_error(&["stock", "buy", "AAPL", "-q", "1"]);
+
+    assert_eq!(body["code"], "usage.unknown_command");
+    assert_eq!(body["category"], "usage");
+    assert_eq!(body["retryable"], false);
+    assert!(body["message"].as_str().is_some_and(|message| {
+        message.contains("unrecognized subcommand") && message.contains("stock")
+    }));
+    assert!(
+        body["hint"]
+            .as_str()
+            .is_some_and(|hint| { hint.contains("command") && hint.contains("--help") })
+    );
+}
+
+#[test]
+fn invalid_value_reports_json_usage_error_when_requested() {
+    let body = json_usage_error(&["completions", "not-a-shell"]);
+
+    assert_eq!(body["code"], "usage.invalid_value");
+    assert_eq!(body["category"], "usage");
+    assert_eq!(body["retryable"], false);
+    assert!(body["message"].as_str().is_some_and(|message| {
+        message.contains("invalid value") && message.contains("not-a-shell")
+    }));
+    assert!(
+        body["hint"]
+            .as_str()
+            .is_some_and(|hint| { hint.contains("accepted values") || hint.contains("--help") })
+    );
+}
+
+#[test]
+fn missing_required_argument_reports_json_usage_error_when_requested() {
+    let body = json_usage_error(&["market", "quote"]);
+
+    assert_eq!(body["code"], "usage.missing_required");
+    assert_eq!(body["category"], "usage");
+    assert_eq!(body["retryable"], false);
+    assert!(
+        body["message"]
+            .as_str()
+            .is_some_and(|message| { message.contains("required") && message.contains("SYMBOLS") })
+    );
+    assert!(
+        body["hint"]
+            .as_str()
+            .is_some_and(|hint| { hint.contains("required") && hint.contains("--help") })
+    );
+}
+
+#[test]
+fn argument_conflict_reports_json_usage_error_when_requested() {
+    let body = json_usage_error(&["market", "quote", "AAPL", "--fields", "sym", "--all-fields"]);
+
+    assert_eq!(body["code"], "usage.argument_conflict");
+    assert_eq!(body["category"], "usage");
+    assert_eq!(body["retryable"], false);
+    assert!(body["message"].as_str().is_some_and(|message| {
+        message.contains("cannot be used") && message.contains("--fields")
+    }));
+    assert!(body["hint"].as_str().is_some_and(|hint| {
+        hint.contains("conflicting") || hint.contains("valid combinations")
+    }));
 }
 
 #[test]

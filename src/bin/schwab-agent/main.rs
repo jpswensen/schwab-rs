@@ -23,7 +23,7 @@ use std::{
     panic::{AssertUnwindSafe, catch_unwind},
 };
 
-use clap::Parser;
+use clap::{Parser, error::ErrorKind};
 use serde_json::Value;
 
 use crate::cli::{Cli, Command, ConfigCommand, OptionCommand, TaCommand};
@@ -34,7 +34,10 @@ use crate::output::ErrorBody;
 #[cfg_attr(coverage_nightly, coverage(off))]
 pub async fn run_from_env() -> i32 {
     init_tracing_from_env();
-    run(Cli::parse()).await
+    match Cli::try_parse() {
+        Ok(cli) => run(cli).await,
+        Err(error) => write_usage_error(error),
+    }
 }
 
 /// Runs the CLI from process arguments and exits with the command status code.
@@ -117,6 +120,66 @@ fn init_tracing_from_env() {
         .try_init();
 }
 
+fn write_usage_error(error: clap::Error) -> i32 {
+    let code = error.exit_code();
+    if !json_usage_errors_enabled() || !error.use_stderr() {
+        let _ = error.print();
+        return code;
+    }
+
+    let kind = error.kind();
+    let body = ErrorBody {
+        code: usage_error_code(kind),
+        message: error.to_string(),
+        category: "usage",
+        retryable: false,
+        hint: usage_error_hint(kind),
+    };
+    let mut stdout = io::stdout().lock();
+    let write_code = write_json(&mut stdout, &body).unwrap_or(1);
+    if write_code == 0 { code } else { write_code }
+}
+
+fn json_usage_errors_enabled() -> bool {
+    std::env::var_os("SCHWAB_AGENT_JSON_ERRORS")
+        .and_then(|value| value.into_string().ok())
+        .is_some_and(|value| {
+            let normalized = value.trim().to_ascii_lowercase();
+            !normalized.is_empty() && !matches!(normalized.as_str(), "0" | "false" | "no" | "off")
+        })
+}
+
+fn usage_error_code(kind: ErrorKind) -> &'static str {
+    match kind {
+        ErrorKind::UnknownArgument => "usage.unknown_argument",
+        ErrorKind::InvalidSubcommand => "usage.unknown_command",
+        ErrorKind::InvalidValue | ErrorKind::ValueValidation => "usage.invalid_value",
+        ErrorKind::MissingRequiredArgument | ErrorKind::MissingSubcommand => {
+            "usage.missing_required"
+        }
+        ErrorKind::ArgumentConflict => "usage.argument_conflict",
+        _ => "usage.error",
+    }
+}
+
+fn usage_error_hint(kind: ErrorKind) -> Option<&'static str> {
+    match kind {
+        ErrorKind::UnknownArgument | ErrorKind::InvalidSubcommand => Some(
+            "Check the command or flag spelling, or run with --help for valid commands and flags.",
+        ),
+        ErrorKind::InvalidValue | ErrorKind::ValueValidation => {
+            Some("Use --help to list accepted values for this argument.")
+        }
+        ErrorKind::MissingRequiredArgument | ErrorKind::MissingSubcommand => {
+            Some("Provide the required argument or run with --help for usage.")
+        }
+        ErrorKind::ArgumentConflict => Some(
+            "Remove one of the conflicting arguments or run with --help for valid combinations.",
+        ),
+        _ => Some("Run with --help for usage information."),
+    }
+}
+
 /// Serializes `value` as JSON and writes it to `writer` followed by a newline.
 ///
 /// Returns `Ok(0)` on success, or an `io::Error` if the write fails.
@@ -159,6 +222,14 @@ mod tests {
     }
 
     impl EnvVarGuard {
+        fn set(key: &'static str, value: &str) -> Self {
+            let previous = std::env::var_os(key);
+            unsafe {
+                std::env::set_var(key, value);
+            }
+            Self { key, previous }
+        }
+
         fn set_path(key: &'static str, value: &Path) -> Self {
             let previous = std::env::var_os(key);
             unsafe {
@@ -234,6 +305,50 @@ mod tests {
             String::from_utf8(stderr)
                 .unwrap()
                 .contains("failed to write shell completions")
+        );
+    }
+
+    #[test]
+    fn json_usage_errors_enabled_accepts_truthy_values() {
+        let _lock = crate::config::TEST_ENV_LOCK.lock().unwrap();
+        let _json_errors = EnvVarGuard::set("SCHWAB_AGENT_JSON_ERRORS", "1");
+        assert!(super::json_usage_errors_enabled());
+    }
+
+    #[test]
+    fn json_usage_errors_enabled_rejects_false_values() {
+        let _lock = crate::config::TEST_ENV_LOCK.lock().unwrap();
+        let _json_errors = EnvVarGuard::set("SCHWAB_AGENT_JSON_ERRORS", "false");
+        assert!(!super::json_usage_errors_enabled());
+    }
+
+    #[test]
+    fn usage_error_classification_maps_common_kinds() {
+        assert_eq!(
+            super::usage_error_code(clap::error::ErrorKind::UnknownArgument),
+            "usage.unknown_argument"
+        );
+        assert_eq!(
+            super::usage_error_code(clap::error::ErrorKind::InvalidSubcommand),
+            "usage.unknown_command"
+        );
+        assert_eq!(
+            super::usage_error_code(clap::error::ErrorKind::ArgumentConflict),
+            "usage.argument_conflict"
+        );
+        assert_eq!(
+            super::usage_error_code(clap::error::ErrorKind::DisplayHelp),
+            "usage.error"
+        );
+        assert!(
+            super::usage_error_hint(clap::error::ErrorKind::MissingRequiredArgument)
+                .unwrap()
+                .contains("required")
+        );
+        assert!(
+            super::usage_error_hint(clap::error::ErrorKind::DisplayHelp)
+                .unwrap()
+                .contains("--help")
         );
     }
 

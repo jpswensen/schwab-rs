@@ -13,6 +13,7 @@ export SCHWAB_CLIENT_SECRET="..."
 # Override with a non-empty SCHWAB_TOKEN_PATH if needed
 # Callback URL defaults to https://127.0.0.1:8182
 # Set RUST_LOG=schwab=debug for tracing diagnostics on stderr while keeping stdout JSON
+# Set SCHWAB_AGENT_JSON_ERRORS=1 when agents need clap usage errors as JSON instead of human stderr
 ```
 
 Credentials can also live in `~/.config/schwab-agent/config.json`. Precedence is command flags, environment variables, config file, then defaults.
@@ -481,13 +482,15 @@ Run `schwab-agent analyze --help` for copyable single-symbol, multi-symbol, and 
 
 ## Output Format
 
-Commands output raw JSON data payloads directly (no wrapper envelope). Errors output a structured JSON object:
+Commands output raw JSON data payloads directly (no wrapper envelope). Application errors output a structured JSON object, and `SCHWAB_AGENT_JSON_ERRORS=1` requests the same shape for clap usage errors while leaving default clap stderr unchanged when unset:
 
 ```json
 {"code": "auth.token_missing", "message": "...", "category": "auth", "retryable": false, "hint": "..."}
 ```
 
 On error (non-zero exit code), read `hint` for recovery steps. Check `retryable` before retrying.
+
+JSON usage errors keep clap's exit code 2, use category `usage`, use stable `usage.*` codes, and set `retryable` to `false`.
 
 ### Error Codes
 
