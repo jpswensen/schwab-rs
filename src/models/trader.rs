@@ -139,6 +139,7 @@ pub struct MarginBalance {
 #[serde(rename_all = "camelCase")]
 #[allow(missing_docs)]
 pub struct CashBalance {
+    pub cash_balance: Option<Number>,
     pub cash_available_for_trading: Option<Number>,
     pub cash_available_for_withdrawal: Option<Number>,
     pub cash_call: Option<Number>,
@@ -1100,6 +1101,7 @@ mod tests {
                 "pfcbFlag": true,
                 "roundTrips": 0,
                 "currentBalances": {
+                    "cashBalance": 9500.0,
                     "cashAvailableForTrading": 10000.0,
                     "cashAvailableForWithdrawal": 8000.0,
                     "totalCash": 10000.0,
@@ -1125,6 +1127,7 @@ mod tests {
                 // r#type is None: serde(tag = "type") consumes the tag field
 
                 let bal = c.current_balances.unwrap();
+                assert_eq!(bal.cash_balance, Some(n(9500.0)));
                 assert_eq!(bal.cash_available_for_trading, Some(n(10000.0)));
                 assert_eq!(bal.cash_available_for_withdrawal, Some(n(8000.0)));
                 assert_eq!(bal.total_cash, Some(n(10000.0)));
