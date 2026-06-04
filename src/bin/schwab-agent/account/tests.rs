@@ -1,6 +1,6 @@
 use crate::account::{
     AccountBalances, AccountResolveData, AccountRow, AccountSummaryData, CashBalanceSummary,
-    MarginBalanceSummary, build_account_row, ensure_selected_account_rendered,
+    MarginBalanceSummary, TrueCashStatus, build_account_row, ensure_selected_account_rendered,
     render_summary_from_data, resolve_account_from_data, resolve_default_account_hash_from_data,
     retain_account_summary,
 };
@@ -29,6 +29,8 @@ fn account_summary_serializes_correctly() {
                 is_closing_only_restricted: Some(false),
                 is_day_trader: Some(true),
                 balances: Some(AccountBalances::Margin(MarginBalanceSummary {
+                    true_cash: Some(number(9.0)),
+                    true_cash_status: TrueCashStatus::Verified,
                     cash_available_for_trading: Some(number(10.0)),
                     cash_available_for_withdrawal: Some(number(11.0)),
                     buying_power: Some(number(12.0)),
@@ -47,6 +49,9 @@ fn account_summary_serializes_correctly() {
                 is_closing_only_restricted: None,
                 is_day_trader: None,
                 balances: Some(AccountBalances::Cash(CashBalanceSummary {
+                    true_cash: Some(number(19.0)),
+                    true_cash_status: TrueCashStatus::Verified,
+                    cash_balance: Some(number(19.0)),
                     cash_available_for_trading: Some(number(20.0)),
                     cash_available_for_withdrawal: Some(number(21.0)),
                     total_cash: Some(number(22.0)),
@@ -118,6 +123,8 @@ fn account_row_omits_absent_optional_fields() {
 #[test]
 fn account_balances_margin_has_kind_margin() {
     let balances = AccountBalances::Margin(MarginBalanceSummary {
+        true_cash: Some(number(0.5)),
+        true_cash_status: TrueCashStatus::Verified,
         cash_available_for_trading: Some(number(1.0)),
         cash_available_for_withdrawal: Some(number(2.0)),
         buying_power: Some(number(3.0)),
@@ -133,6 +140,9 @@ fn account_balances_margin_has_kind_margin() {
 #[test]
 fn account_balances_cash_has_kind_cash() {
     let balances = AccountBalances::Cash(CashBalanceSummary {
+        true_cash: Some(number(0.5)),
+        true_cash_status: TrueCashStatus::Verified,
+        cash_balance: Some(number(0.5)),
         cash_available_for_trading: Some(number(1.0)),
         cash_available_for_withdrawal: Some(number(2.0)),
         total_cash: Some(number(3.0)),
@@ -140,6 +150,13 @@ fn account_balances_cash_has_kind_cash() {
 
     let serialized = serde_json::to_string(&balances).unwrap();
     assert!(serialized.contains("\"kind\":\"cash\""));
+}
+
+#[test]
+fn true_cash_status_not_applicable_serializes_as_snake_case() {
+    let serialized = serde_json::to_value(TrueCashStatus::NotApplicable).unwrap();
+
+    assert_eq!(serialized, "not_applicable");
 }
 
 #[test]
@@ -557,6 +574,7 @@ fn make_margin_balance() -> schwab::MarginBalance {
 
 fn make_cash_balance() -> schwab::CashBalance {
     schwab::CashBalance {
+        cash_balance: Some(number(4_750.0)),
         cash_available_for_trading: Some(number(5_000.0)),
         cash_available_for_withdrawal: Some(number(4_500.0)),
         cash_call: None,
@@ -565,6 +583,21 @@ fn make_cash_balance() -> schwab::CashBalance {
         total_cash: Some(number(5_500.0)),
         unsettled_cash: None,
     }
+}
+
+fn make_margin_initial_balance() -> schwab::MarginInitialBalance {
+    serde_json::from_value(serde_json::json!({
+        "cashBalance": 6_500.0,
+        "totalCash": 7_000.0
+    }))
+    .unwrap()
+}
+
+fn make_cash_initial_balance() -> schwab::CashInitialBalance {
+    serde_json::from_value(serde_json::json!({
+        "cashBalance": 4_250.0
+    }))
+    .unwrap()
 }
 
 fn position_with_instrument(instrument: AccountsInstrument) -> schwab::Position {
@@ -945,12 +978,59 @@ fn account_summary_margin_balance_fields() {
 
     match row.balances.as_ref().unwrap() {
         AccountBalances::Margin(m) => {
+            assert_eq!(m.true_cash, None);
+            assert_eq!(m.true_cash_status, TrueCashStatus::Unavailable);
             assert_eq!(m.cash_available_for_trading, Some(number(10_000.0)));
             assert_eq!(m.cash_available_for_withdrawal, Some(number(8_000.0)));
             assert_eq!(m.buying_power, Some(number(20_000.0)));
             assert_eq!(m.stock_buying_power, Some(number(18_000.0)));
             assert_eq!(m.option_buying_power, Some(number(15_000.0)));
             assert_eq!(m.equity, Some(number(50_000.0)));
+        }
+        AccountBalances::Cash(_) => panic!("expected margin balances"),
+    }
+}
+
+#[test]
+fn account_summary_margin_true_cash_uses_initial_balance_cash() {
+    let hashes = [make_hash("A1", "HASH1")];
+    let prefs: Vec<schwab::UserPreferenceAccount> = vec![];
+    let mut account = make_margin_account("A1", Some(make_margin_balance()), None);
+    if let Some(schwab::SecuritiesAccount::Margin(ref mut margin)) = account.securities_account {
+        margin.initial_balances = Some(make_margin_initial_balance());
+    }
+
+    let summary = render_summary_from_data(&[account], &hashes, &prefs, false);
+    let row = &summary.accounts[0];
+
+    match row.balances.as_ref().unwrap() {
+        AccountBalances::Margin(m) => {
+            assert_eq!(m.true_cash, Some(number(7_000.0)));
+            assert_eq!(m.true_cash_status, TrueCashStatus::Verified);
+            assert_eq!(m.buying_power, Some(number(20_000.0)));
+        }
+        AccountBalances::Cash(_) => panic!("expected margin balances"),
+    }
+}
+
+#[test]
+fn account_summary_margin_true_cash_falls_back_to_initial_cash_balance() {
+    let hashes = [make_hash("A1", "HASH1")];
+    let prefs: Vec<schwab::UserPreferenceAccount> = vec![];
+    let mut account = make_margin_account("A1", Some(make_margin_balance()), None);
+    if let Some(schwab::SecuritiesAccount::Margin(ref mut margin)) = account.securities_account {
+        let mut initial = make_margin_initial_balance();
+        initial.total_cash = None;
+        margin.initial_balances = Some(initial);
+    }
+
+    let summary = render_summary_from_data(&[account], &hashes, &prefs, false);
+    let row = &summary.accounts[0];
+
+    match row.balances.as_ref().unwrap() {
+        AccountBalances::Margin(m) => {
+            assert_eq!(m.true_cash, Some(number(6_500.0)));
+            assert_eq!(m.true_cash_status, TrueCashStatus::Verified);
         }
         AccountBalances::Cash(_) => panic!("expected margin balances"),
     }
@@ -967,9 +1047,76 @@ fn account_summary_cash_balance_fields() {
 
     match row.balances.as_ref().unwrap() {
         AccountBalances::Cash(c) => {
+            assert_eq!(c.true_cash, Some(number(4_750.0)));
+            assert_eq!(c.true_cash_status, TrueCashStatus::Verified);
+            assert_eq!(c.cash_balance, Some(number(4_750.0)));
             assert_eq!(c.cash_available_for_trading, Some(number(5_000.0)));
             assert_eq!(c.cash_available_for_withdrawal, Some(number(4_500.0)));
             assert_eq!(c.total_cash, Some(number(5_500.0)));
+        }
+        AccountBalances::Margin(_) => panic!("expected cash balances"),
+    }
+}
+
+#[test]
+fn account_summary_cash_true_cash_falls_back_to_total_cash() {
+    let hashes = [make_hash("A1", "HASH1")];
+    let prefs: Vec<schwab::UserPreferenceAccount> = vec![];
+    let mut balance = make_cash_balance();
+    balance.cash_balance = None;
+    let accounts = vec![make_cash_account("A1", Some(balance), None)];
+
+    let summary = render_summary_from_data(&accounts, &hashes, &prefs, false);
+    let row = &summary.accounts[0];
+
+    match row.balances.as_ref().unwrap() {
+        AccountBalances::Cash(c) => {
+            assert_eq!(c.true_cash, Some(number(5_500.0)));
+            assert_eq!(c.true_cash_status, TrueCashStatus::Verified);
+        }
+        AccountBalances::Margin(_) => panic!("expected cash balances"),
+    }
+}
+
+#[test]
+fn account_summary_cash_true_cash_uses_initial_balance_when_current_missing() {
+    let hashes = [make_hash("A1", "HASH1")];
+    let prefs: Vec<schwab::UserPreferenceAccount> = vec![];
+    let mut account = make_cash_account("A1", None, None);
+    if let Some(schwab::SecuritiesAccount::Cash(ref mut cash)) = account.securities_account {
+        cash.initial_balances = Some(make_cash_initial_balance());
+    }
+
+    let summary = render_summary_from_data(&[account], &hashes, &prefs, false);
+    let row = &summary.accounts[0];
+
+    match row.balances.as_ref().unwrap() {
+        AccountBalances::Cash(c) => {
+            assert_eq!(c.true_cash, Some(number(4_250.0)));
+            assert_eq!(c.true_cash_status, TrueCashStatus::Verified);
+            assert_eq!(c.total_cash, None);
+        }
+        AccountBalances::Margin(_) => panic!("expected cash balances"),
+    }
+}
+
+#[test]
+fn account_summary_cash_true_cash_unavailable_when_source_missing() {
+    let hashes = [make_hash("A1", "HASH1")];
+    let prefs: Vec<schwab::UserPreferenceAccount> = vec![];
+    let mut balance = make_cash_balance();
+    balance.cash_balance = None;
+    balance.total_cash = None;
+    let accounts = vec![make_cash_account("A1", Some(balance), None)];
+
+    let summary = render_summary_from_data(&accounts, &hashes, &prefs, false);
+    let row = &summary.accounts[0];
+
+    match row.balances.as_ref().unwrap() {
+        AccountBalances::Cash(c) => {
+            assert_eq!(c.true_cash, None);
+            assert_eq!(c.true_cash_status, TrueCashStatus::Unavailable);
+            assert_eq!(c.cash_available_for_trading, Some(number(5_000.0)));
         }
         AccountBalances::Margin(_) => panic!("expected cash balances"),
     }

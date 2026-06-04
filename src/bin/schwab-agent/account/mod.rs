@@ -4,8 +4,8 @@ use serde::Serialize;
 use serde_json::{Value, to_value};
 
 use schwab::{
-    Account, AccountNumberHash, AccountsInstrument, CashBalance, MarginBalance, SecuritiesAccount,
-    UserPreference, UserPreferenceAccount,
+    Account, AccountNumberHash, AccountsInstrument, CashBalance, CashInitialBalance, MarginBalance,
+    MarginInitialBalance, SecuritiesAccount, UserPreference, UserPreferenceAccount,
 };
 
 use crate::auth;
@@ -53,10 +53,21 @@ pub enum AccountBalances {
     Cash(CashBalanceSummary),
 }
 
+/// Status for margin-safe true cash discovery.
+#[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TrueCashStatus {
+    Verified,
+    Unavailable,
+    NotApplicable,
+}
+
 /// Margin account balance summary.
 #[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize)]
 pub struct MarginBalanceSummary {
+    pub true_cash: Option<schwab::Number>,
+    pub true_cash_status: TrueCashStatus,
     pub cash_available_for_trading: Option<schwab::Number>,
     pub cash_available_for_withdrawal: Option<schwab::Number>,
     pub buying_power: Option<schwab::Number>,
@@ -69,6 +80,9 @@ pub struct MarginBalanceSummary {
 #[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize)]
 pub struct CashBalanceSummary {
+    pub true_cash: Option<schwab::Number>,
+    pub true_cash_status: TrueCashStatus,
+    pub cash_balance: Option<schwab::Number>,
     pub cash_available_for_trading: Option<schwab::Number>,
     pub cash_available_for_withdrawal: Option<schwab::Number>,
     pub total_cash: Option<schwab::Number>,
@@ -264,10 +278,10 @@ pub(crate) fn render_summary_from_data(
 fn extract_account_fields(account: &Account, with_positions: bool) -> Option<AccountFields> {
     match account.securities_account.as_ref()? {
         SecuritiesAccount::Margin(margin) => {
-            let balances = margin
-                .current_balances
-                .as_ref()
-                .map(|b| AccountBalances::Margin(margin_balance_summary(b)));
+            let balances = account_balances_margin(
+                margin.current_balances.as_ref(),
+                margin.initial_balances.as_ref(),
+            );
             let positions = with_positions
                 .then(|| format_positions(&margin.positions))
                 .flatten();
@@ -281,10 +295,10 @@ fn extract_account_fields(account: &Account, with_positions: bool) -> Option<Acc
             })
         }
         SecuritiesAccount::Cash(cash) => {
-            let balances = cash
-                .current_balances
-                .as_ref()
-                .map(|b| AccountBalances::Cash(cash_balance_summary(b)));
+            let balances = account_balances_cash(
+                cash.current_balances.as_ref(),
+                cash.initial_balances.as_ref(),
+            );
             let positions = with_positions
                 .then(|| format_positions(&cash.positions))
                 .flatten();
@@ -300,26 +314,67 @@ fn extract_account_fields(account: &Account, with_positions: bool) -> Option<Acc
     }
 }
 
-/// Maps a [`MarginBalance`] to a compact [`MarginBalanceSummary`].
+fn account_balances_margin(
+    current: Option<&MarginBalance>,
+    initial: Option<&MarginInitialBalance>,
+) -> Option<AccountBalances> {
+    (current.is_some() || initial.is_some())
+        .then(|| AccountBalances::Margin(margin_balance_summary(current, initial)))
+}
+
+fn account_balances_cash(
+    current: Option<&CashBalance>,
+    initial: Option<&CashInitialBalance>,
+) -> Option<AccountBalances> {
+    (current.is_some() || initial.is_some())
+        .then(|| AccountBalances::Cash(cash_balance_summary(current, initial)))
+}
+
+/// Maps margin balance snapshots to a compact [`MarginBalanceSummary`].
 #[must_use]
-fn margin_balance_summary(balance: &MarginBalance) -> MarginBalanceSummary {
+fn margin_balance_summary(
+    balance: Option<&MarginBalance>,
+    initial: Option<&MarginInitialBalance>,
+) -> MarginBalanceSummary {
+    let true_cash = initial.and_then(|balance| balance.total_cash.or(balance.cash_balance));
     MarginBalanceSummary {
-        cash_available_for_trading: balance.available_funds,
-        cash_available_for_withdrawal: balance.available_funds_non_marginable_trade,
-        buying_power: balance.buying_power,
-        stock_buying_power: balance.stock_buying_power,
-        option_buying_power: balance.option_buying_power,
-        equity: balance.equity,
+        true_cash,
+        true_cash_status: true_cash_status(true_cash),
+        cash_available_for_trading: balance.and_then(|balance| balance.available_funds),
+        cash_available_for_withdrawal: balance
+            .and_then(|balance| balance.available_funds_non_marginable_trade),
+        buying_power: balance.and_then(|balance| balance.buying_power),
+        stock_buying_power: balance.and_then(|balance| balance.stock_buying_power),
+        option_buying_power: balance.and_then(|balance| balance.option_buying_power),
+        equity: balance.and_then(|balance| balance.equity),
     }
 }
 
-/// Maps a [`CashBalance`] to a compact [`CashBalanceSummary`].
+/// Maps cash balance snapshots to a compact [`CashBalanceSummary`].
 #[must_use]
-fn cash_balance_summary(balance: &CashBalance) -> CashBalanceSummary {
+fn cash_balance_summary(
+    balance: Option<&CashBalance>,
+    initial: Option<&CashInitialBalance>,
+) -> CashBalanceSummary {
+    let true_cash = balance
+        .and_then(|balance| balance.cash_balance.or(balance.total_cash))
+        .or_else(|| initial.and_then(|balance| balance.cash_balance));
     CashBalanceSummary {
-        cash_available_for_trading: balance.cash_available_for_trading,
-        cash_available_for_withdrawal: balance.cash_available_for_withdrawal,
-        total_cash: balance.total_cash,
+        true_cash,
+        true_cash_status: true_cash_status(true_cash),
+        cash_balance: balance.and_then(|balance| balance.cash_balance),
+        cash_available_for_trading: balance.and_then(|balance| balance.cash_available_for_trading),
+        cash_available_for_withdrawal: balance
+            .and_then(|balance| balance.cash_available_for_withdrawal),
+        total_cash: balance.and_then(|balance| balance.total_cash),
+    }
+}
+
+fn true_cash_status(true_cash: Option<schwab::Number>) -> TrueCashStatus {
+    if true_cash.is_some() {
+        TrueCashStatus::Verified
+    } else {
+        TrueCashStatus::Unavailable
     }
 }
 
