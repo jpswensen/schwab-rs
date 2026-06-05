@@ -232,6 +232,11 @@ impl TokenFile {
     }
 }
 
+#[derive(Deserialize)]
+struct OAuthErrorBody {
+    error: Option<String>,
+}
+
 /// Storage backend for persisted Schwab OAuth tokens.
 pub trait TokenStore: Send + Sync {
     /// Saves a token file.
@@ -424,7 +429,8 @@ impl Provider {
     ///
     /// # Errors
     ///
-    /// Returns [`crate::Error::AuthExpired`] if the refresh token has expired.
+    /// Returns [`crate::Error::AuthExpired`] if the refresh token has expired locally.
+    /// Returns [`crate::Error::RefreshTokenInvalid`] if Schwab rejects the refresh token.
     /// Returns an [`Error`] if the token store cannot be read, the refresh request
     /// fails, or the refreshed token cannot be persisted.
     #[instrument(skip_all)]
@@ -449,7 +455,8 @@ impl Provider {
     ///
     /// # Errors
     ///
-    /// Returns [`crate::Error::AuthExpired`] if the refresh token has expired.
+    /// Returns [`crate::Error::AuthExpired`] if the refresh token has expired locally.
+    /// Returns [`crate::Error::RefreshTokenInvalid`] if Schwab rejects the refresh token.
     /// Returns an [`Error`] if the token store cannot be read, the refresh request
     /// fails, or the refreshed token cannot be persisted.
     #[instrument(skip_all)]
@@ -734,7 +741,8 @@ where
 ///
 /// # Errors
 ///
-/// Returns [`crate::Error::AuthExpired`] if the refresh token is missing or has expired.
+/// Returns [`crate::Error::AuthExpired`] if the refresh token is missing or has expired locally.
+/// Returns [`crate::Error::RefreshTokenInvalid`] if Schwab rejects the refresh token.
 /// Returns an [`Error`] if the refresh request fails or the response cannot be decoded.
 #[instrument(skip_all)]
 pub async fn refresh_token_file(config: &AuthConfig, token_file: &TokenFile) -> Result<TokenFile> {
@@ -795,8 +803,8 @@ async fn token_request(
         let bytes = response.bytes().await.map_err(Error::Request)?;
         let body =
             String::from_utf8_lossy(&bytes[..bytes.len().min(OAUTH_ERROR_BODY_LIMIT)]).into_owned();
-        if status.as_u16() == 400 && body.contains("invalid_grant") {
-            return Err(Error::AuthExpired);
+        if status.as_u16() == 400 && is_invalid_grant_error(&body) {
+            return Err(Error::RefreshTokenInvalid);
         }
         return Err(Error::HttpStatus {
             status: status.as_u16(),
@@ -805,6 +813,14 @@ async fn token_request(
     }
     let text = response.text().await.map_err(Error::Request)?;
     serde_json::from_str::<TokenData>(&text).map_err(|source| Error::Decode { source, body: text })
+}
+
+fn is_invalid_grant_error(body: &str) -> bool {
+    serde_json::from_str::<OAuthErrorBody>(body)
+        .ok()
+        .and_then(|error| error.error)
+        .is_some_and(|error| error == "invalid_grant")
+        || body.contains("invalid_grant")
 }
 
 /// Starts the full login flow and calls `url_handler` with the authorization URL.
@@ -1448,6 +1464,26 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn refresh_token_file_maps_invalid_grant_to_reauth_error() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("POST", "/token")
+            .with_status(400)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"error":"invalid_grant","error_description":"Refresh token expired"}"#)
+            .create_async()
+            .await;
+
+        let url = server.url();
+        let config = test_config(&url);
+        let original = token_file("OLD", "REFRESH1", current_timestamp().unwrap() - 1);
+
+        let error = refresh_token_file(&config, &original).await.unwrap_err();
+
+        assert_matches!(error, Error::RefreshTokenInvalid);
+    }
+
+    #[tokio::test]
     async fn provider_refreshes_expired_token_and_saves_result() {
         let mut server = mockito::Server::new_async().await;
         let mock = server
@@ -1848,7 +1884,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn token_request_maps_400_invalid_grant_to_auth_expired() {
+    async fn token_request_maps_400_invalid_grant_to_refresh_token_invalid() {
         let mut server = mockito::Server::new_async().await;
         server
             .mock("POST", "/token")
@@ -1863,7 +1899,7 @@ mod tests {
             .await
             .unwrap_err();
 
-        assert_matches!(error, Error::AuthExpired);
+        assert_matches!(error, Error::RefreshTokenInvalid);
     }
 
     #[tokio::test]

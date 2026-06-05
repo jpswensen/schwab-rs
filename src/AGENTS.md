@@ -81,11 +81,12 @@ For POST/PUT with a JSON body, use `self.send_empty_with_location(method, url, &
 ## Error Handling (`error.rs`)
 
 - `Error` enum uses `thiserror` derive
-- Variants: `EmptyBaseUrl`, `InvalidBaseUrl`, `EmptySymbols`, `MissingRequiredParameter`, `OrderConversion`, `InvalidAuthConfig`, `AuthRequired`, `AuthExpired`, `AuthCallback`, `Io`, `Encode`, `Json`, `HttpStatus`, `Request`, `Decode`, `WebSocket`, `StreamLogin`, `StreamProtocol`
+- Variants: `EmptyBaseUrl`, `InvalidBaseUrl`, `EmptySymbols`, `MissingRequiredParameter`, `OrderConversion`, `InvalidAuthConfig`, `AuthRequired`, `AuthExpired`, `RefreshTokenInvalid`, `AuthCallback`, `Io`, `Encode`, `Json`, `HttpStatus`, `Request`, `Decode`, `WebSocket`, `StreamLogin`, `StreamProtocol`
 - `WebSocket` boxes the tungstenite source error so crate-wide `Result<T>` does not trip `clippy::result_large_err`
 - Manual `Debug` impl on `Error`: redacts `body` field in `HttpStatus` and `Decode` to `<redacted>`
 - `Result<T>` is `std::result::Result<T, Error>`
 - Never expose raw HTTP response bodies in error messages or debug output
+- OAuth token endpoint HTTP 400 `invalid_grant` responses map to `Error::RefreshTokenInvalid` so callers can distinguish a revoked or expired refresh token from generic HTTP failures and prompt full re-authentication
 
 ## Auth Module (`auth.rs`)
 

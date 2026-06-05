@@ -58,7 +58,7 @@ schwab-agent auth login           # interactive: opens browser, waits for callba
 
 `auth login` keeps listening through browser certificate-warning probes and other incomplete localhost requests. It stops when Schwab sends the full OAuth callback, returns an OAuth error, hits a state mismatch, or the login timeout expires.
 
-If you get `auth.token_missing`, run `login-url` then `exchange`. If `auth.expired`, run `refresh`.
+If you get `auth.token_missing`, run `login-url` then `exchange`. If `auth.expired`, run `refresh`. If `auth.refresh_token_invalid`, run full re-authentication with `auth login` or `login-url` plus `exchange`.
 
 ## Market Data
 
@@ -532,6 +532,7 @@ JSON usage errors keep clap's exit code 2, use category `usage`, use stable `usa
 | `auth.config_missing` | No client ID/secret | Add to `~/.config/schwab-agent/config.json` or set `SCHWAB_CLIENT_ID`/`SCHWAB_CLIENT_SECRET` |
 | `auth.token_missing` | No token file | Run `auth login-url` then `auth exchange` |
 | `auth.expired` | Token expired | Run `auth refresh` |
+| `auth.refresh_token_invalid` | Refresh token expired or revoked | Run full re-authentication with `auth login` or `auth login-url` then `auth exchange` |
 | `auth.required` | Auth needed | Run full auth flow |
 | `schwab.http_status` | API HTTP error | Check message for status code |
 | `input.empty_symbols` | No symbols given | Provide at least one symbol |

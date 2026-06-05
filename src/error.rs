@@ -68,6 +68,9 @@ pub enum Error {
     /// The stored Schwab refresh token is expired or revoked.
     #[error("Schwab authentication is expired")]
     AuthExpired,
+    /// The Schwab refresh token was rejected and cannot be used for refresh.
+    #[error("Schwab refresh token is expired or invalid")]
+    RefreshTokenInvalid,
     /// The localhost OAuth callback failed or returned invalid data.
     #[error("Schwab auth callback failed: {0}")]
     AuthCallback(String),
@@ -146,6 +149,7 @@ impl std::fmt::Debug for Error {
                 .finish(),
             Self::AuthRequired => formatter.write_str("AuthRequired"),
             Self::AuthExpired => formatter.write_str("AuthExpired"),
+            Self::RefreshTokenInvalid => formatter.write_str("RefreshTokenInvalid"),
             Self::AuthCallback(message) => formatter
                 .debug_tuple("AuthCallback")
                 .field(message)
@@ -249,6 +253,7 @@ mod tests {
             },
             Error::AuthRequired,
             Error::AuthExpired,
+            Error::RefreshTokenInvalid,
             Error::AuthCallback("timeout".into()),
             Error::Io(io_err),
             Error::Encode(serde_err),
@@ -274,16 +279,17 @@ mod tests {
         assert!(debug_strings[5].contains("InvalidAuthConfig"));
         assert_eq!(debug_strings[6], "AuthRequired");
         assert_eq!(debug_strings[7], "AuthExpired");
-        assert!(debug_strings[8].contains("AuthCallback"));
-        assert!(debug_strings[9].contains("Io"));
-        assert!(debug_strings[10].contains("Encode"));
-        assert!(debug_strings[11].contains("Json"));
+        assert_eq!(debug_strings[8], "RefreshTokenInvalid");
+        assert!(debug_strings[9].contains("AuthCallback"));
+        assert!(debug_strings[10].contains("Io"));
+        assert!(debug_strings[11].contains("Encode"));
+        assert!(debug_strings[12].contains("Json"));
         // HttpStatus body is redacted
-        assert!(debug_strings[12].contains("<redacted>"));
-        assert!(!debug_strings[12].contains("secret data"));
-        // Decode body is redacted
         assert!(debug_strings[13].contains("<redacted>"));
-        assert!(!debug_strings[13].contains("raw payload"));
+        assert!(!debug_strings[13].contains("secret data"));
+        // Decode body is redacted
+        assert!(debug_strings[14].contains("<redacted>"));
+        assert!(!debug_strings[14].contains("raw payload"));
 
         // Also verify Display for remaining untested variants
         assert_eq!(
@@ -301,6 +307,10 @@ mod tests {
         assert_eq!(
             Error::AuthExpired.to_string(),
             "Schwab authentication is expired"
+        );
+        assert_eq!(
+            Error::RefreshTokenInvalid.to_string(),
+            "Schwab refresh token is expired or invalid"
         );
         assert!(
             Error::AuthCallback("oops".into())
