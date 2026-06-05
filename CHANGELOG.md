@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0](https://github.com/major/schwab-rs/compare/0.4.0..0.5.0) - 2026-06-05
+
+### Bug Fixes
+
+- *(auth)* Classify invalid refresh tokens - ([7368631](https://github.com/major/schwab-rs/commit/73686314e3f97b9a76a7493b9e8f6fe9713165a1))
+
+### Documentation
+
+- *(cli)* Clarify auth recovery commands - ([d505c4d](https://github.com/major/schwab-rs/commit/d505c4d6f242ed2a623c86ded1dc0b1c6d9f3c18))
+
+### Testing
+
+- *(auth)* Cover text invalid grant response - ([b50a5b4](https://github.com/major/schwab-rs/commit/b50a5b40ef7996f88784819184dadc5e0d327949))
+
+
 ## [0.4.0](https://github.com/major/schwab-rs/compare/0.3.3..0.4.0) - 2026-06-04
 
 ### Bug Fixes
