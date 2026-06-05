@@ -167,6 +167,9 @@ impl AppError {
             Self::MarketValidation { .. } => Some(
                 "Use --fields with one or more supported quote output fields, for example sym,last,pct,vol.",
             ),
+            Self::Schwab(schwab::Error::RefreshTokenInvalid) => {
+                Some("Run auth login, or use auth login-url and auth exchange, to re-authenticate.")
+            }
             Self::Schwab(schwab::Error::AuthExpired | schwab::Error::AuthRequired) => {
                 Some("Run auth refresh, or re-authenticate with auth login-url and auth exchange.")
             }
@@ -191,6 +194,7 @@ fn classify_schwab_error(error: &schwab::Error) -> (i32, &'static str, &'static 
     match error {
         schwab::Error::AuthRequired => (3, "auth.required", "auth"),
         schwab::Error::AuthExpired => (3, "auth.expired", "auth"),
+        schwab::Error::RefreshTokenInvalid => (3, "auth.refresh_token_invalid", "auth"),
         schwab::Error::AuthCallback(_) => (3, "auth.callback_failed", "auth"),
         schwab::Error::HttpStatus { .. } => (4, "schwab.http_status", "schwab"),
         schwab::Error::Request(_) => (1, "schwab.request_failed", "schwab"),

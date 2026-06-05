@@ -127,6 +127,19 @@ fn schwab_auth_expired_classification() {
 }
 
 #[test]
+fn schwab_refresh_token_invalid_classification() {
+    let err = AppError::Schwab(schwab::Error::RefreshTokenInvalid);
+    assert_eq!(err.exit_code(), 3);
+    assert_eq!(err.code(), "auth.refresh_token_invalid");
+    assert_eq!(err.category(), "auth");
+    assert!(!err.retryable());
+    assert_eq!(
+        err.hint(),
+        Some("Run auth login, or use auth login-url and auth exchange, to re-authenticate.")
+    );
+}
+
+#[test]
 fn schwab_auth_callback_classification() {
     let err = AppError::Schwab(schwab::Error::AuthCallback("timeout".into()));
     assert_eq!(err.exit_code(), 3);
