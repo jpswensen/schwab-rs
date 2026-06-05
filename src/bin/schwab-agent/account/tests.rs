@@ -31,6 +31,7 @@ fn account_summary_serializes_correctly() {
                 balances: Some(AccountBalances::Margin(MarginBalanceSummary {
                     true_cash: Some(number(9.0)),
                     true_cash_status: TrueCashStatus::Verified,
+                    cash_balance: Some(number(9.0)),
                     cash_available_for_trading: Some(number(10.0)),
                     cash_available_for_withdrawal: Some(number(11.0)),
                     buying_power: Some(number(12.0)),
@@ -125,6 +126,7 @@ fn account_balances_margin_has_kind_margin() {
     let balances = AccountBalances::Margin(MarginBalanceSummary {
         true_cash: Some(number(0.5)),
         true_cash_status: TrueCashStatus::Verified,
+        cash_balance: Some(number(0.5)),
         cash_available_for_trading: Some(number(1.0)),
         cash_available_for_withdrawal: Some(number(2.0)),
         buying_power: Some(number(3.0)),
@@ -554,6 +556,7 @@ fn make_margin_balance() -> schwab::MarginBalance {
         available_funds_non_marginable_trade: Some(number(8_000.0)),
         buying_power: Some(number(20_000.0)),
         buying_power_non_marginable_trade: None,
+        cash_balance: None,
         day_trading_buying_power: None,
         day_trading_buying_power_call: None,
         equity: Some(number(50_000.0)),
@@ -589,6 +592,17 @@ fn make_margin_initial_balance() -> schwab::MarginInitialBalance {
     serde_json::from_value(serde_json::json!({
         "cashBalance": 6_500.0,
         "totalCash": 7_000.0
+    }))
+    .unwrap()
+}
+
+fn make_margin_balance_with_cash_balance(cash_balance: f64) -> schwab::MarginBalance {
+    serde_json::from_value(serde_json::json!({
+        "availableFunds": 10_000.0,
+        "availableFundsNonMarginableTrade": 8_000.0,
+        "buyingPower": 20_000.0,
+        "cashBalance": cash_balance,
+        "equity": 50_000.0
     }))
     .unwrap()
 }
@@ -1011,6 +1025,56 @@ fn account_summary_margin_true_cash_uses_initial_balance_cash() {
         }
         AccountBalances::Cash(_) => panic!("expected margin balances"),
     }
+}
+
+#[test]
+fn account_summary_margin_true_cash_uses_current_cash_balance() {
+    let hashes = [make_hash("A1", "HASH1")];
+    let prefs: Vec<schwab::UserPreferenceAccount> = vec![];
+    let mut account = make_margin_account(
+        "A1",
+        Some(make_margin_balance_with_cash_balance(102_248.79)),
+        None,
+    );
+    if let Some(schwab::SecuritiesAccount::Margin(ref mut margin)) = account.securities_account {
+        margin.initial_balances = Some(
+            serde_json::from_value(serde_json::json!({
+                "cashBalance": 237_561.02,
+                "totalCash": 0.0
+            }))
+            .unwrap(),
+        );
+    }
+
+    let summary = render_summary_from_data(&[account], &hashes, &prefs, false);
+    let row = &summary.accounts[0];
+
+    match row.balances.as_ref().unwrap() {
+        AccountBalances::Margin(m) => {
+            assert_eq!(m.true_cash, Some(number(102_248.79)));
+            assert_eq!(m.true_cash_status, TrueCashStatus::Verified);
+        }
+        AccountBalances::Cash(_) => panic!("expected margin balances"),
+    }
+}
+
+#[test]
+fn account_summary_margin_balance_reports_current_cash_balance() {
+    let hashes = [make_hash("A1", "HASH1")];
+    let prefs: Vec<schwab::UserPreferenceAccount> = vec![];
+    let accounts = vec![make_margin_account(
+        "A1",
+        Some(make_margin_balance_with_cash_balance(102_248.79)),
+        None,
+    )];
+
+    let summary = render_summary_from_data(&accounts, &hashes, &prefs, false);
+    let value = serde_json::to_value(&summary.accounts[0].balances).unwrap();
+
+    assert_eq!(
+        value["cash_balance"],
+        serde_json::to_value(number(102_248.79)).unwrap()
+    );
 }
 
 #[test]

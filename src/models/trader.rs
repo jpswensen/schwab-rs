@@ -117,6 +117,7 @@ pub struct MarginBalance {
     pub available_funds_non_marginable_trade: Option<Number>,
     pub buying_power: Option<Number>,
     pub buying_power_non_marginable_trade: Option<Number>,
+    pub cash_balance: Option<Number>,
     pub day_trading_buying_power: Option<Number>,
     pub day_trading_buying_power_call: Option<Number>,
     pub equity: Option<Number>,
@@ -1048,6 +1049,7 @@ mod tests {
                 "currentBalances": {
                     "availableFunds": 25000.50,
                     "buyingPower": 50000.0,
+                    "cashBalance": 9500.0,
                     "equity": 75000.0,
                     "marginBalance": -25000.0,
                     "shortBalance": 0.0
@@ -1078,6 +1080,7 @@ mod tests {
                 let bal = m.current_balances.unwrap();
                 assert_eq!(bal.available_funds, Some(n(25000.50)));
                 assert_eq!(bal.buying_power, Some(n(50000.0)));
+                assert_eq!(bal.cash_balance, Some(n(9500.0)));
                 assert_eq!(bal.equity, Some(n(75000.0)));
 
                 let init = m.initial_balances.unwrap();

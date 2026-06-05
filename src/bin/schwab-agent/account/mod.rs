@@ -68,6 +68,7 @@ pub enum TrueCashStatus {
 pub struct MarginBalanceSummary {
     pub true_cash: Option<schwab::Number>,
     pub true_cash_status: TrueCashStatus,
+    pub cash_balance: Option<schwab::Number>,
     pub cash_available_for_trading: Option<schwab::Number>,
     pub cash_available_for_withdrawal: Option<schwab::Number>,
     pub buying_power: Option<schwab::Number>,
@@ -336,10 +337,14 @@ fn margin_balance_summary(
     balance: Option<&MarginBalance>,
     initial: Option<&MarginInitialBalance>,
 ) -> MarginBalanceSummary {
-    let true_cash = initial.and_then(|balance| balance.total_cash.or(balance.cash_balance));
+    let cash_balance = balance.and_then(|balance| balance.cash_balance);
+    let true_cash = cash_balance
+        .or_else(|| initial.and_then(|balance| balance.total_cash))
+        .or_else(|| initial.and_then(|balance| balance.cash_balance));
     MarginBalanceSummary {
         true_cash,
         true_cash_status: true_cash_status(true_cash),
+        cash_balance,
         cash_available_for_trading: balance.and_then(|balance| balance.available_funds),
         cash_available_for_withdrawal: balance
             .and_then(|balance| balance.available_funds_non_marginable_trade),
