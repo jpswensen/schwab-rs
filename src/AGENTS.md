@@ -116,6 +116,8 @@ Builder types for query parameter construction. Each has a `new()` constructor a
 
 All builders produce a `Vec<(&str, String)>` consumed by query string assembly.
 
+Market data `ExchangeName::Nas` accepts both Schwab exchange spellings, `NAS` and `NASDAQ`, and serializes as `NAS`.
+
 Trader order responses use `OrderStatus::Unknown` as the serde fallback for undocumented order lifecycle values, while known statuses such as `WORKING`, `CANCELED`, and `REJECTED` deserialize to typed variants. Order activity execution types use `ExecutionType::Unknown` for undocumented values, while `FILL` and `CANCELED` deserialize to typed variants.
 
 ## Order Builder (`order_builder.rs`)

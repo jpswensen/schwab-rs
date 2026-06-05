@@ -1086,6 +1086,10 @@ mod tests {
             "interestRate": 5.275,
             "underlyingPrice": 170.5,
             "volatility": 29.0,
+            "underlying": {
+                "symbol": "AAPL",
+                "exchangeName": "NASDAQ"
+            },
             "callExpDateMap": {
                 "2024-01-19:30": {
                     "170.0": [
@@ -1128,6 +1132,9 @@ mod tests {
         assert_eq!(chain.is_delayed, Some(false));
         assert_eq!(chain.interest_rate, Some(n(5.275)));
         assert_eq!(chain.underlying_price, Some(n(170.5)));
+
+        let underlying = chain.underlying.unwrap();
+        assert_eq!(underlying.exchange_name, Some(ExchangeName::Nas));
 
         let call_map = chain.call_exp_date_map.unwrap();
         let exp_date = call_map.get("2024-01-19:30").unwrap();
