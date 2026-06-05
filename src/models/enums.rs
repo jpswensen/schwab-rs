@@ -216,6 +216,7 @@ pub enum ExchangeName {
     Ind,
     Ase,
     Nys,
+    #[serde(alias = "NASDAQ")]
     Nas,
     Nap,
     Pac,
