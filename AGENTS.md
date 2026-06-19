@@ -1,181 +1,128 @@
-# schwab-rs
+# schwab-rs agent guide
 
-> [!CAUTION]
-> **After every code change, update `AGENTS.md`, `src/AGENTS.md`, `src/models/AGENTS.md`, and `README.md` before considering the work done.** Stale docs mislead reviewers and AI agents. Treat doc updates as part of the change, not a follow-up. Verify claims (signatures, variant lists, line counts, examples) against the actual code - do not copy from memory or prior versions.
+Rust client library for the Charles Schwab API plus the `schwab-agent` JSON CLI.
 
-Rust client library for the Charles Schwab brokerage API plus the `schwab-agent` structured JSON CLI binary.
+## Start here
 
-## Build and Test
+Read only this section first. Open the task-specific files below only when your change touches that area.
+
+- Keep source/docs/fixtures ASCII unless a wire-format fixture requires Unicode.
+- Do not use `--all-features` for routine checks; it enables live `test_online` tests.
+- Never leak bearer tokens, credentials, account hashes, balances, order IDs, or HTTP response bodies in logs, errors, Debug output, tests, or docs.
+- Public library code must not read hidden config, write user-facing output, or call `process::exit`.
+- When behavior changes, update only the docs that describe that behavior. There is one agent guide: this file. Do not add nested `AGENTS.md` files.
+
+## Checks
+
+Use the smallest check that proves your change, then run broader checks before shipping.
 
 ```bash
-make check          # runs: fmt clippy test doc
-make fmt            # cargo fmt --all --check
-make fmt-fix        # cargo fmt --all
-make clippy         # clippy: default, decimal, library no-default, library no-default+decimal
-make test           # cargo test: default, decimal, library no-default, library no-default+decimal
-make doc            # RUSTDOCFLAGS with deny flags, default docs + library no-default docs
+make check          # fmt + clippy + test + doc
+make fmt-fix        # apply rustfmt
+make clippy         # default, decimal, no-default, no-default+decimal
+make test           # default, decimal, no-default, no-default+decimal
+make doc            # rustdoc checks
+make coverage       # nightly llvm-cov, 90% project gate
+make patch-coverage # diff-cover patch gate against PATCH_COVERAGE_BASE
 make audit          # cargo audit
-make coverage       # nightly cargo llvm-cov test --fail-under-lines 90 with coverage_nightly cfg
-make patch-coverage # nightly cargo llvm-cov lcov + diff-cover 95% patch gate against PATCH_COVERAGE_BASE
-make machete        # cargo machete unused dependency check
-make clean          # cargo clean and remove lcov.info
+make machete        # unused dependency check
 ```
 
-MSRV: 1.96. Edition: 2024. Always test with both default and `decimal` feature.
+MSRV: Rust 1.96. Edition: 2024.
 
-## Feature Flags
+## Discover by task
 
-- `cli`: default feature that enables the `schwab-agent` binary and CLI-only dependencies (`clap`, `clap_complete`, `dirs`, `open`, `sha2`, `tracing-subscriber`). Library consumers can use `default-features = false` to avoid CLI dependencies.
-- `decimal`: swaps `Number` type alias from `f64` to `rust_decimal::Decimal`. All numeric model fields use `Number`, so both variants must compile and pass tests.
-- `test_online`: gates live integration tests against the real Schwab API. Never run in CI.
+### Public library/API changes
 
-## Project Layout
+Read:
 
-```text
-src/
-  lib.rs              # crate root, public module tree, re-exports
-  auth.rs             # OAuth2 PKCE flow, token storage, provider
-  client.rs           # HTTP client, endpoint routing
-  config.rs           # Config builder, URL normalization
-  error.rs            # Error enum (thiserror), redacted Debug
-  market_data_api.rs  # 11 market data endpoint methods
-  trader_api.rs       # 13 trader endpoint methods
-  streaming_api.rs    # Client::stream entry point (planned glue for streaming sessions)
-  options.rs          # query parameter builder types
-  order_builder/      # OrderBuilder facade, constructors, composition, conversion, and tests
-  query.rs            # query string helpers
-  stream_session/     # WebSocket protocol, transport, StreamingSession engine, inline mock-transport tests
-  test_support.rs     # test-only helpers (n(), fixture())
-  bin/schwab-agent/   # agent-oriented JSON CLI, config, auth, market, account, order, option, TA, analyze commands
-  models/             # see src/models/AGENTS.md
-SKILL.md              # repository-level pointer to the schwab-agent LLM command guide
-```
+- `src/lib.rs` for module exports and public surface
+- `src/client.rs` for HTTP plumbing and API base handling
+- `src/market_data_api.rs` or `src/trader_api.rs` for endpoint method patterns
+- `src/config.rs` and `src/error.rs` for config, Result, and redaction behavior
 
-## Conventions
+Rules:
 
-- Public API: `Client` + typed async methods returning `schwab::Result<T>`
-- Binary target: `schwab-agent` at `src/bin/schwab-agent/main.rs`, gated by the default `cli` feature; CLI modules remain binary-private and may use documented CLI config, environment variables, JSON output, and process exit behavior without changing the library contract
-- `schwab-agent completions <shell>` and its singular alias `schwab-agent completion <shell>` are the sole raw stdout exceptions to the JSON output contract because shells need an unwrapped completion script; completion generation write failures report a short stderr diagnostic and exit non-zero
-- `schwab-agent` ignores empty `SCHWAB_TOKEN_PATH` values, keeps the compatibility token default under `schwab-agent-rs/token.json`, and resolves the base from `XDG_CONFIG_HOME` before the platform config directory
-- `schwab-agent config status` reports sanitized setup state, including config/token paths, file presence, credential sources, precedence, mutable-operation guard state, known environment variable names, and `RUST_LOG` status without printing secrets, account hashes, balances, or order IDs
-- `schwab-agent schema` reports machine-readable CLI discovery, including version, supported commands and aliases, safety classification, output formats, environment variables, exit codes, field selectors, and docs URL without requiring account data; `schwab-agent doctor` and `schwab-agent config show` report sanitized setup and auth/environment health without secrets
-- High-frequency CLI aliases are `quote` for `market quote`, `history` for `market history`, `orders` for `order get`, and `positions` for `account --positions`; legacy `stock buy` and `stock sell` are migration stubs that return `usage.migration` JSON with exact `order equity buy`/`order equity sell` replacements
-- `schwab-agent account` and `schwab-agent account --positions` expose `balances.cash_balance` plus `balances.true_cash_status` and `balances.true_cash` when Schwab provides a margin-safe cash source; margin accounts use Schwab `currentBalances.cashBalance` (Cash & Sweep Vehicle) first, and downstream SGOV sweep or funding automation must use `true_cash` only when the status is `verified` and must not treat buying power, available funds, cash available for trading or withdrawal, option buying power, or similar capacity fields as margin-safe cash
-- `schwab-agent` initializes tracing diagnostics on stderr only when `RUST_LOG` is set, preserving JSON stdout for normal command output
-- `SCHWAB_AGENT_JSON_ERRORS=1` makes clap usage errors render as `ErrorBody` JSON on stdout with stable `usage.*` codes, category `usage`, retryable `false`, and actionable hints; default human-readable clap stderr remains unchanged when the variable is unset or false-like
-- `schwab-agent auth refresh` maps Schwab OAuth `invalid_grant` token responses to `auth.refresh_token_invalid` with exit code 3 and a full re-authentication hint instead of surfacing generic `schwab.http_status`
-- `schwab-agent` command-specific help includes copyable examples for the primary market, option, technical analysis, and analyze workflows; `option chain --help` and `option screen --help` list valid `--type` values (`call`, `put`, `all`)
-- `schwab-agent analyze` combines live quote payloads with TA dashboard data from completed candles; `analysis.derived` exposes `price_basis`, `price_basis_value`, and `price_basis_timestamp` so downstream agents know which price produced derived values such as distance from SMAs
-- `schwab-agent market history --from/--to` accepts `YYYY-MM-DD`, RFC3339, or epoch milliseconds, validates invalid values before auth/API calls, and expands date-only values to inclusive UTC calendar-day boundaries
-- `schwab-agent option screen` rejects non-finite numeric filter inputs before API calls, enforces normalized contract-type filters in output rows, and serializes numeric output through the active `Number` representation so default and `decimal` builds stay consistent
-- `schwab-agent order get --symbol <SYMBOL>` is the preferred open-order check for one public ticker; keep unfiltered `order get` or account-scoped `order get --account HASH` for broader conflict checks across symbols or strategies
-- `--order-id <ORDER_ID>` is the canonical order ID spelling for `order get`, `order cancel`, `order replace`, and `order repeat`; `order get --order` remains a hidden compatibility alias, and positional cancel/repeat IDs remain compatibility forms that must match `--order-id` when both are supplied
-- `schwab-agent order equity|option ... --dry-run` and `--preview` are explicit local draft modes that print order JSON without requiring an account, auth token, Schwab preview API call, or placement; choose one local draft flag per command, omitting `--account` remains a compatible local draft, while `--save-preview` is the account-backed Schwab preview/digest flow and `--preview-first` previews then places automatically
-- Order session arguments accept `normal`/`regular`, `am`/`pre`, `pm`/`post`, and `seamless`/`extended`; duration accepts the canonical lowercase values plus uppercase aliases such as `DAY`, `GTC`, `FOK`, and `IOC`
-- Root re-exports include `StreamingSession` plus streaming event, data, and field selector model types through `models::*`
-- All public async methods: `&self` receiver, `#[instrument(skip_all)]` tracing attribute
-- Two API bases: `MarketData` (`/marketdata/v1`) and `Trader` (`/trader/v1`) via `ApiBase` enum
-- Streaming engine: `StreamingSession` owns a background WebSocket task, prioritizes queued outbound commands over reads in the loop, exposes `subscribe()` for broadcast `StreamEvent`s, supports account activity plus market data subscriptions, sends LOGOUT through `disconnect()`, replays subscriptions after reconnect, closes old transport before reconnecting, stores subscriptions before sending to avoid races with reconnect, and routes all subscription methods through shared symbol trimming, field-index serialization, validation, storage, and SUBS command delivery
-- `Error::WebSocket` stores the tungstenite error in a `Box` so the crate-wide `Result<T>` stays small enough for `clippy::result_large_err`
-- Streaming reconnect policy: 10 attempts, 1s exponential backoff doubled to a 30s cap, 0-500ms jitter, code 3 LOGIN_DENIED stops reconnecting
-- `Config` builder: `Config::new()` with `.bearer_token("...")` and optional `.base_url()`/`.trader_base_url()` overrides
-- `OrderBuilder` constructs serializable equity and single-leg option order payloads with common buy/sell and option open/close helpers, lower-level `equity_*`/`option_*` constructors for explicit `Instruction` values, fluent `session`/`duration`/`order_strategy_type` setters, and nested OCO/TRIGGER composition helpers, including bracket examples shaped as entry order TRIGGER plus child OCO exit orders. Every public `OrderBuilder` method has structured rustdoc sections for arguments, defaults, payload effects, cautions when applicable, and examples so downstream CLIs can generate help text from docs.
-- All response model fields are `Option<T>` (Schwab API returns partial data)
-- All enums in `enums.rs` are `#[non_exhaustive]` with `#[serde(rename_all = "...")]`
-- `ExchangeName::Nas` accepts both Schwab exchange spellings, `NAS` and `NASDAQ`, and serializes as `NAS`
-- `OrderStatus::Unknown` and `ExecutionType::Unknown` use `#[serde(other)]` so undocumented order lifecycle statuses and order activity execution types do not break order deserialization; known execution types include `FILL` and `CANCELED`
-- `OrderBuilder::try_from_order(&Order)` and `TryFrom<Order>` rebuild submit-ready payloads from historical `Order` values for supported `SINGLE`, `TRIGGER`, and `OCO` strategies; conversion drops response metadata, validates common top-level `quantity` against the single submitted leg when present, and returns `Error::OrderConversion` for missing required submit fields or unsupported order/leg shapes
-- Untagged/tagged dispatch enums (`QuoteResponseObject`, `SecuritiesAccount`, `AccountsInstrument`, `TransactionInstrument`) omit `#[non_exhaustive]` since serde cannot deserialize unknown variants for these
-- Clippy: `-D clippy::all -A clippy::needless_borrow -A clippy::large_enum_variant`
-- `#![deny(missing_docs)]` in `lib.rs` - all public items require doc comments (compile error if missing)
-- Doc comments: short one-line summaries, action-verb start ("Get", "Place", "Parse")
-- `# Errors` section required on all public `Result`-returning methods
-- Model types use `#[allow(missing_docs)]` since struct fields and enum variants mirror JSON field names
-- Rustdoc links in private modules must use `crate::Error` paths; `pub mod auth` can use bare `Error`
-- US English spelling enforced
-- Rustdoc examples required on all public structs, enums, functions, and async API methods
-- Async network methods use ` ```no_run ` fences with `# async fn example() -> schwab::Result<()> {` boilerplate
-- Sync builders and pure-logic items use plain ` ``` ` fences with compile-time assertions where possible
-- Examples must compile under both default and `decimal` features (use `"1.0".parse().unwrap()` for `Number` literals)
-- Keep source, docs, fixtures, and vendored reference text ASCII unless a wire-format fixture or API contract explicitly requires Unicode; replace decorative separators, mojibake, and non-breaking spaces so Renovate hidden-Unicode checks stay clean
-- `tests/cli_smoke.rs` is gated to the default `cli` feature and uses `assert_cmd` and `predicates` for offline compiled-binary checks of help output, shell completions for bash, zsh, fish, and PowerShell, clap usage errors, structured JSON errors, and hermetic dry-run order JSON.
-- Pattern assertions in tests use Rust 1.96's standard `assert_matches!` macro instead of `assert!(matches!(...))`
+- Public async API methods use `&self`, return `schwab::Result<T>`, and have `#[instrument(skip_all)]`.
+- `src/lib.rs` denies missing docs; public `Result` methods need `# Errors`.
+- Rustdoc examples must compile with default and `decimal` features.
 
-## Security (Non-Negotiable)
+### Models/serde changes
 
-- Bearer tokens and HTTP response bodies MUST be redacted in Debug impls
-- `auth.rs` callback URL restricted to `https://127.0.0.1` only
-- Token files: directory 0o700, file 0o600 permissions
-- Library must never call `process::exit`, write user-facing output, or read hidden config
-- `schwab-agent` mutable order commands must keep the config guard, resolve account selectors to canonical Schwab hashes, use preview/digest flows where appropriate, store saved previews with owner-only permissions, and verify order state after mutable actions
-- Flag any credential/token exposure in logs, errors, tests, or docs
-- Order methods must not invent safety shortcuts or silently mutate payloads
+Read:
 
-## CI
+- `src/models/mod.rs` for `Number` and re-exports
+- `src/models/enums.rs` for enum serde conventions
+- `src/models/market_data.rs` or `src/models/trader.rs` for neighboring model shape
+- `src/models/streaming/` for streaming field-index models
+- `tests/fixtures/` for deserialization examples
 
-Runs on Ubuntu, macOS, Windows:
-- `fmt` (nightly rustfmt)
-- `clippy` (stable, 3 OS, default + `decimal` + library no-default + library no-default `decimal`)
-- `test` (stable, 3 OS, default + `decimal` + library no-default + library no-default `decimal`)
-- `msrv` (Rust 1.96, Ubuntu)
-- `coverage` (Ubuntu, nightly cargo-llvm-cov with `coverage_nightly` cfg, 90% project line coverage, uploads `lcov.info` to Codecov when `CODECOV_TOKEN` is present; Codecov enforces 90% project and 95% patch status gates)
-- `machete` (Ubuntu, cargo-machete unused dependency check)
-- `docs` (stable, Ubuntu)
-- `audit` (daily cron + on Cargo.toml/Cargo.lock changes)
+Rules:
 
-Coverage and machete CI jobs pin installed cargo tool versions and disable install-action fallback. A non-secret presence flag gates Codecov upload, the Codecov token is scoped only to the upload step, and generated `lcov.info` is ignored.
+- Use `Number` for numeric fields; never hard-code `f64` or `Decimal` in models.
+- Response model fields are `Option<T>` because Schwab returns partial data.
+- Enums in `src/models/enums.rs` are `#[non_exhaustive]`; serde dispatch enums that cannot handle unknown variants are the exception.
 
-Release: `release-plz` runs automatically on every push to `main` via `.github/workflows/release-plz.yml` for release PRs and tag creation. Tag pushes trigger `.github/workflows/release.yml`, where cargo-dist builds binary artifacts, creates the GitHub Release, and publishes `schwab` to crates.io through Trusted Publishing.
+### Order behavior
 
-This repository exclusively uses crates.io Trusted Publishing with GitHub Actions OIDC (`id-token: write`) for all crate publishing. Never add `CARGO_REGISTRY_TOKEN` or any other long-lived registry token. The Trusted Publisher on crates.io is configured with workflow filename `release.yml`. The release-plz workflow uses `RELEASE_PLZ_TOKEN` for GitHub operations (checkout, PR creation, tagging).
+Read:
 
-Changelog generation uses git-cliff via `cliff.toml` with Conventional Commits grouping (features, bug fixes, docs, performance, refactor, styling, testing, miscellaneous, security, reverts). The template produces version comparison links and commit SHA links.
+- `src/order_builder/` for library order payload construction and conversion
+- `src/bin/schwab-agent/order/` for CLI order workflows
+- `src/bin/schwab-agent/verify.rs` for post-action verification
 
-Configuration lives in `release-plz.toml` (clean-tree enforcement, semver checking, changelog via cliff.toml, no release-time dependency updates, release PRs, and tag settings), `dist-workspace.toml` (cargo-dist binary packaging and publish orchestration), `cliff.toml` (git-cliff changelog template and commit parsing rules), and a minimal `renovate.json` required by Mend-hosted Renovate onboarding. Renovate owns dependency updates through the org-level inherited config; validate with `npx --yes --package renovate renovate-config-validator` before changing Renovate policy. release-plz only edits version and changelog content.
+Rules:
 
-### Release Workflow
+- Order methods/builders must not invent safety shortcuts or silently mutate caller payloads.
+- Mutable CLI order commands keep the config guard, preview/digest flow where applicable, canonical account-hash resolution, owner-only preview files, and post-action verification.
 
-Automatic flow on push to `main`:
+### Auth/security changes
 
-1. Push commits to `main` using Conventional Commits (`feat:`, `fix:`, etc.)
-2. `release-plz.yml` triggers automatically and runs release-plz
-3. release-plz opens/updates a PR with the version bump and `CHANGELOG.md` entries (generated by git-cliff)
-4. Review and merge the release PR
-5. The merge triggers release-plz again, which detects the version bump and creates the git tag
-6. The tag triggers cargo-dist in `release.yml`, which builds `schwab-agent` artifacts, creates the GitHub Release, and publishes `schwab`
-7. Verify at `https://crates.io/crates/schwab`
+Read:
 
-### Manual Release Fallback
+- `src/auth.rs` for OAuth, token stores, and provider behavior
+- `src/bin/schwab-agent/auth/` for CLI auth commands
+- `src/config.rs`, `src/error.rs`, and `src/bin/schwab-agent/error/` for redaction and error mapping
 
-If release-plz is unavailable, version bumps can be done manually:
+Rules:
 
-1. Bump `version` in `Cargo.toml`
-2. Run `cargo update --workspace` to sync `Cargo.lock`
-3. Commit **both** `Cargo.toml` and `Cargo.lock` together (dirty `Cargo.lock` causes `cargo publish` to fail)
-4. Push to `main`
-5. Let `release-plz.yml` create the tag and `release.yml` publish through cargo-dist, or run `cargo publish` locally only if the release automation is unavailable
+- OAuth callback URLs stay restricted to `https://127.0.0.1`.
+- Token files and directories stay owner-only.
+- Raw HTTP response bodies stay redacted in Debug/error output.
 
-## Review Instructions
+### Streaming changes
 
-Detailed file-specific review instructions live in `.github/instructions/`. The project-wide review policy is in `.github/copilot-instructions.md`. Clippy allow attributes require a specific lint name and explanation comment.
+Read:
 
-## Keeping Documentation Current
+- `src/streaming_api.rs`
+- `src/stream_session/`
+- `src/models/streaming/`
+- `tests/fixtures/streaming_*.json`
 
-When the code or project structure changes, keep these files updated to match:
+### CLI changes
 
-- `AGENTS.md` (this file), `src/AGENTS.md`, `src/models/AGENTS.md` - AI agent context
-- `CHANGELOG.md` - managed by release-plz automatically via release PRs
-- `renovate.json` - minimal onboarding marker required by Mend-hosted Renovate; policy remains inherited from the org-level shared config and must validate with `npx --yes --package renovate renovate-config-validator`
-- `release-plz.toml` - release-plz configuration (semver check, changelog, git release settings)
-- `dist-workspace.toml` - cargo-dist binary artifact and publish configuration
-- `cliff.toml` - git-cliff changelog template and commit parsing rules
-- `README.md` - user-facing usage docs and feature descriptions
-- `.coderabbit.yaml` - automated review configuration
-- `.github/copilot-instructions.md` and `.github/instructions/*.instructions.md` - review policies
+Read:
 
-Stale documentation misleads both human reviewers and AI agents. Update these files as part of any PR that changes public API surface, conventions, build commands, CI workflows, or security requirements.
+- `src/bin/schwab-agent/cli.rs` for clap definitions
+- `src/bin/schwab-agent/discovery.rs` and `src/bin/schwab-agent/config.rs` for schema/doctor/config output
+- `src/bin/schwab-agent/error/` for stable error codes and exit codes
+- the command module under `src/bin/schwab-agent/`
+- `src/bin/schwab-agent/SKILL.md` for the LLM command contract
+- `tests/cli_smoke.rs` for offline binary behavior checks
 
-## Subdirectory Guides
+Rules:
 
-- [`src/AGENTS.md`](src/AGENTS.md) - module architecture, API patterns, error handling, testing
-- [`src/models/AGENTS.md`](src/models/AGENTS.md) - type design, serde patterns, Number alias
+- `schwab-agent` emits raw JSON payloads; errors use stable `ErrorBody` JSON.
+- Shell completions are the raw-stdout exception.
+- Keep command behavior, aliases, exit codes, JSON fields, and examples synchronized with `README.md` and `src/bin/schwab-agent/SKILL.md`.
+
+### CI/release/tooling changes
+
+Read only the file you are changing, plus the paired config if relevant:
+
+- `.github/workflows/`
+- `release-plz.toml`
+- `dist-workspace.toml`
+- `cliff.toml`
+- `codecov.yml`
+- `renovate.json`
