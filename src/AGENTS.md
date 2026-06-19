@@ -184,8 +184,8 @@ Internal functions for building query parameter vectors:
   - `fixture(name)` - load JSON from `tests/fixtures/{name}.json`
 - Live integration tests in `tests/integration.rs`, gated behind `#[cfg(feature = "test_online")]`
 - Always run tests with default features, `--features decimal`, `--lib --no-default-features`, and `--lib --no-default-features --features decimal`. Do not use `--all-features` for routine offline checks because that enables `test_online`.
-- CI and local coverage use nightly `cargo llvm-cov` with the `coverage_nightly` cfg, a 90% line threshold, offline tests only, and must not enable `test_online`
-- `make patch-coverage` writes `lcov.info` and uses `diff-cover` against `PATCH_COVERAGE_BASE` (default `main`) so changed lines stay tested
+- CI and local coverage use nightly `cargo llvm-cov` with the `coverage_nightly` cfg, a 90% project line threshold, offline tests only, and must not enable `test_online`
+- `make patch-coverage` writes `lcov.info` and uses `diff-cover` against `PATCH_COVERAGE_BASE` (default `main`) with the same 95% patch gate Codecov enforces remotely
 - `make machete` and the CI `machete` job run `cargo machete` for unused dependency checks. CI pins the installed `cargo-llvm-cov` and `cargo-machete` versions and disables install-action fallback.
 - Generated `lcov.info` is ignored by git and CodeRabbit path filters and should not be reviewed as source
 - Root `SKILL.md` points to `src/bin/schwab-agent/SKILL.md` so the LLM-facing CLI contract stays discoverable from the repository root while detailed command guidance remains beside the binary code.

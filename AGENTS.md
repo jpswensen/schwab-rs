@@ -16,7 +16,7 @@ make test           # cargo test: default, decimal, library no-default, library 
 make doc            # RUSTDOCFLAGS with deny flags, default docs + library no-default docs
 make audit          # cargo audit
 make coverage       # nightly cargo llvm-cov test --fail-under-lines 90 with coverage_nightly cfg
-make patch-coverage # nightly cargo llvm-cov lcov + diff-cover against PATCH_COVERAGE_BASE
+make patch-coverage # nightly cargo llvm-cov lcov + diff-cover 95% patch gate against PATCH_COVERAGE_BASE
 make machete        # cargo machete unused dependency check
 make clean          # cargo clean and remove lcov.info
 ```
@@ -118,7 +118,7 @@ Runs on Ubuntu, macOS, Windows:
 - `clippy` (stable, 3 OS, default + `decimal` + library no-default + library no-default `decimal`)
 - `test` (stable, 3 OS, default + `decimal` + library no-default + library no-default `decimal`)
 - `msrv` (Rust 1.96, Ubuntu)
-- `coverage` (Ubuntu, nightly cargo-llvm-cov with `coverage_nightly` cfg, 90% line coverage, uploads `lcov.info` to Codecov when `CODECOV_TOKEN` is present)
+- `coverage` (Ubuntu, nightly cargo-llvm-cov with `coverage_nightly` cfg, 90% project line coverage, uploads `lcov.info` to Codecov when `CODECOV_TOKEN` is present; Codecov enforces 90% project and 95% patch status gates)
 - `machete` (Ubuntu, cargo-machete unused dependency check)
 - `docs` (stable, Ubuntu)
 - `audit` (daily cron + on Cargo.toml/Cargo.lock changes)

@@ -51,12 +51,12 @@ All numeric fields in model structs use `Number`, never raw `f64` or `Decimal`. 
 ## Repository Automation Notes
 
 - Numeric model changes must pass tests with default `Number = f64`, with the `decimal` feature enabled, with `--lib --no-default-features`, and with `--lib --no-default-features --features decimal`. Routine checks must not enable `test_online`.
-- CI coverage and `make patch-coverage` enforce a 90% line threshold with nightly `cargo llvm-cov` and the `coverage_nightly` cfg, use offline tests only, and must never enable `test_online`
+- CI coverage and `make coverage` enforce a 90% project line threshold with nightly `cargo llvm-cov` and the `coverage_nightly` cfg, `make patch-coverage` enforces 95% changed-line coverage through `diff-cover`, and both use offline tests only and must never enable `test_online`
 - CLI smoke tests in `tests/cli_smoke.rs` run only with the `cli` feature and may assert serialized model-derived order JSON from hermetic implicit and explicit dry-run commands, sanitized config/doctor status output, machine-readable discovery schema output, high-frequency command aliases, legacy stock migration hints, opt-in JSON usage errors, command-specific help examples, valid option `--type` help values, raw shell completion output for bash, zsh, fish, and PowerShell, and stderr diagnostics from `schwab-agent completions`; keep numeric output compatible with both default `Number` and `decimal` builds.
 - CLI workflow docs should direct symbol-specific order conflict checks to `order get --symbol <SYMBOL>` while preserving broad unfiltered open-order checks when agents need to inspect all active orders.
 - CLI workflow docs should use `--order-id <ORDER_ID>` as the canonical lifecycle order ID spelling and mention positional cancel/repeat IDs only as compatibility forms.
 - `cargo machete` runs in CI and through `make machete`; model dependency changes may require updating imports or dependencies together
-- Generated `lcov.info` is ignored by git and CodeRabbit, and CI pins the installed coverage and machete tool versions with install-action fallback disabled
+- Generated `lcov.info` is ignored by git and CodeRabbit, CI pins the installed coverage and machete tool versions with install-action fallback disabled, and Codecov enforces 90% project plus 95% patch status gates
 - The repository root `SKILL.md` is a pointer to the detailed `src/bin/schwab-agent/SKILL.md` CLI contract; model guidance remains in this file.
 - Keep model fixtures and copied API reference text ASCII unless the Schwab wire format explicitly requires Unicode; hidden or decorative Unicode trips Renovate warnings and should be replaced with plain ASCII equivalents.
 - Renovate dependency policy is inherited from the org-level shared config; keep repo-local `renovate.json` minimal for Mend-hosted onboarding and validate with `npx --yes --package renovate renovate-config-validator`.

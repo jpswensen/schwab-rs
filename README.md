@@ -294,7 +294,7 @@ Offline tests include `cli` feature-gated compiled-binary smoke checks for `schw
 
 `make coverage` runs offline tests through nightly `cargo llvm-cov` with the `coverage_nightly` cfg enabled and enforces 90% line coverage. It does not enable `test_online`, because live Schwab API tests require explicit credentials and must never run in CI.
 
-`make patch-coverage` generates `lcov.info` and runs `diff-cover` against `PATCH_COVERAGE_BASE` (default `main`) with `PATCH_COVERAGE_FAIL_UNDER` (default `100`). Set `DIFF_COVER` if you use `uvx diff-cover` or another wrapper.
+`make patch-coverage` generates `lcov.info` and runs `diff-cover` against `PATCH_COVERAGE_BASE` (default `main`) with `PATCH_COVERAGE_FAIL_UNDER` (default `95`). Codecov enforces the same 90% project and 95% patch coverage gates remotely. Set `DIFF_COVER` if you use `uvx diff-cover` or another wrapper.
 
 `make machete` runs `cargo machete` to catch unused dependencies before CI does.
 

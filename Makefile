@@ -4,7 +4,7 @@ CLIPPY_FLAGS := -D clippy::all -A clippy::needless_borrow -A clippy::large_enum_
 RUSTDOCFLAGS := -D rustdoc::broken-intra-doc-links -D rustdoc::private-intra-doc-links
 COVERAGE_RUSTFLAGS := --cfg coverage_nightly
 PATCH_COVERAGE_BASE ?= main
-PATCH_COVERAGE_FAIL_UNDER ?= 100
+PATCH_COVERAGE_FAIL_UNDER ?= 95
 DIFF_COVER ?= diff-cover
 
 check: fmt clippy test doc
