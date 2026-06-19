@@ -59,7 +59,7 @@ All numeric fields in model structs use `Number`, never raw `f64` or `Decimal`. 
 - Generated `lcov.info` is ignored by git and CodeRabbit, and CI pins the installed coverage and machete tool versions with install-action fallback disabled
 - The repository root `SKILL.md` is a pointer to the detailed `src/bin/schwab-agent/SKILL.md` CLI contract; model guidance remains in this file.
 - Keep model fixtures and copied API reference text ASCII unless the Schwab wire format explicitly requires Unicode; hidden or decorative Unicode trips Renovate warnings and should be replaced with plain ASCII equivalents.
-- Renovate dependency policy is inherited from the org-level shared config; validate with `npx --yes --package renovate renovate-config-validator`, and model changes should not add a repo-local Renovate config unless a repo-specific override is required.
+- Renovate dependency policy is inherited from the org-level shared config; keep repo-local `renovate.json` minimal for Mend-hosted onboarding and validate with `npx --yes --package renovate renovate-config-validator`.
 
 ## Type Design Rules
 
