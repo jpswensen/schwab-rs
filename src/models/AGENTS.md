@@ -46,7 +46,7 @@ cfg_select! {
 }
 ```
 
-All numeric fields in model structs use `Number`, never raw `f64` or `Decimal`. This ensures the `decimal` feature flag works transparently. Both variants must compile and pass tests. `OrderBuilder` uses `Number` for equity share quantities, option contract quantities, limit prices, and stop prices, including nested trigger/OCO bracket examples; its rustdoc examples parse numeric literals from strings so they compile under both default and `decimal` features.
+All numeric fields in model structs use `Number`, never raw `f64` or `Decimal`. This ensures the `decimal` feature flag works transparently. Both variants must compile and pass tests. `OrderBuilder` lives under `src/order_builder/` and uses `Number` for equity share quantities, option contract quantities, limit prices, and stop prices, including nested trigger/OCO bracket examples; its rustdoc examples parse numeric literals from strings so they compile under both default and `decimal` features.
 
 ## Repository Automation Notes
 

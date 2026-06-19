@@ -42,7 +42,7 @@ src/
   trader_api.rs       # 13 trader endpoint methods
   streaming_api.rs    # Client::stream entry point (planned glue for streaming sessions)
   options.rs          # query parameter builder types
-  order_builder.rs    # equity and single-leg option order construction plus order-to-builder conversion
+  order_builder/      # OrderBuilder facade, constructors, composition, conversion, and tests
   query.rs            # query string helpers
   stream_session/     # WebSocket protocol, transport, StreamingSession engine, inline mock-transport tests
   test_support.rs     # test-only helpers (n(), fixture())

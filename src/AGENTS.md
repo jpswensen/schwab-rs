@@ -19,7 +19,7 @@ lib.rs
   mod trader_api        # impl Client: 13 trader methods
   mod models            # response/request types (private, re-exported via models::*)
   mod options           # query param builders (private, re-exported individually)
-  mod order_builder     # OrderBuilder construction and conversion (private, re-exported)
+  mod order_builder     # OrderBuilder facade with constructors, composition, conversion, and tests split under src/order_builder/ (private, re-exported)
   mod query             # internal query string helpers
   mod stream_session    # WebSocket protocol, transport, StreamingSession engine
   mod streaming_api     # Client::stream entry point, credentials bootstrap
@@ -28,6 +28,8 @@ bin/schwab-agent/       # Binary-private JSON CLI modules and tests
 ```
 
 Root re-exports: `Client`, `Config`, `Error`, `Result`, `models::*`, all option builder types, `OrderBuilder`, `StreamingSession`.
+
+`src/order_builder/` keeps the public `OrderBuilder` API in `mod.rs`; `constructors.rs` contains convenience equity/option helpers, `core.rs` contains composition plus lower-level builders and fluent setters, `convert.rs` contains repeat-order conversion, and `tests.rs` contains order-builder unit tests.
 
 ## Adding API Methods
 
