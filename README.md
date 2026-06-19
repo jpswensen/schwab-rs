@@ -12,7 +12,7 @@ Wraps the Schwab Market Data and Trader REST APIs with typed methods and models 
 - **Market Data** - quotes, option chains, expiration chains, instruments, market hours, movers, price history
 - **Schwab response compatibility** - typed model deserialization follows observed Schwab variants, including both `NAS` and `NASDAQ` Nasdaq exchange spellings
 - **Trader** - accounts, orders (place/replace/cancel/preview), transactions, user preferences
-- **Order builder** - typed equity helpers, single-leg option helpers, OCO, and first-triggers-second order composition
+- **Order builder** - typed equity helpers, single-leg option helpers, OCO, first-triggers-second order composition, and repeat-order conversion
 - **Repeat orders** - convert supported historical `Order` responses into `OrderBuilder` payloads for reuse
 - **Typed order states** - known lifecycle statuses such as `WORKING`, `FILLED`, `CANCELED`, and `REJECTED`, plus order activity execution types such as `FILL` and `CANCELED`, deserialize to typed variants with `Unknown` fallbacks for future Schwab values
 - **Streaming** - WebSocket session engine for account activity, level-one equities, options, futures, futures options, forex, chart equity, chart futures, screener equity, and screener option with broadcast events and automatic reconnect
