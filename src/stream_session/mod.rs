@@ -21,6 +21,11 @@ pub(crate) mod transport;
 type CommandAck = oneshot::Sender<crate::Result<()>>;
 type LogoutAck = oneshot::Sender<crate::Result<()>>;
 
+/// Request id used for ADMIN/QOS commands. Ids are informational — server
+/// responses are matched by service/command — so any value unused by the
+/// other builders (login=0, logout/replay=1, services=2+) works.
+const QOS_REQUEST_ID: &str = "99";
+
 enum SessionCommand {
     Send { text: String, ack: CommandAck },
 }
@@ -47,7 +52,28 @@ pub struct StreamingSession {
     logout_tx: mpsc::Sender<LogoutAck>,
     event_tx: broadcast::Sender<StreamEvent>,
     subs: Arc<Mutex<Vec<StoredSub>>>,
+    qos: Arc<Mutex<Option<u8>>>,
     credentials: Arc<SessionCredentials>,
+}
+
+/// Streamer update-conflation interval, requested via the `ADMIN`/`QOS`
+/// command (see [`StreamingSession::set_qos`]). Values follow the Schwab/TDA
+/// streamer levels; the interval is the fastest cadence at which the server
+/// pushes updates per symbol.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum QosLevel {
+    /// 500 ms — the fastest available.
+    Express = 0,
+    /// 750 ms.
+    RealTime = 1,
+    /// 1000 ms (documented websocket default).
+    Fast = 2,
+    /// 1500 ms.
+    Moderate = 3,
+    /// 3000 ms.
+    Slow = 4,
+    /// 5000 ms.
+    Delayed = 5,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -92,6 +118,7 @@ impl StreamingSession {
         let (cmd_tx, cmd_rx) = mpsc::channel::<SessionCommand>(64);
         let (logout_tx, logout_rx) = mpsc::channel::<LogoutAck>(1);
         let subs = Arc::new(Mutex::new(Vec::new()));
+        let qos = Arc::new(Mutex::new(None));
         let credentials = Arc::new(credentials);
 
         tokio::spawn(run_message_loop::<T>(
@@ -100,6 +127,7 @@ impl StreamingSession {
             logout_rx,
             event_tx.clone(),
             subs.clone(),
+            qos.clone(),
             credentials.clone(),
         ));
 
@@ -108,8 +136,64 @@ impl StreamingSession {
             logout_tx,
             event_tx,
             subs,
+            qos,
             credentials,
         })
+    }
+
+    /// Request a streamer update-conflation interval (`ADMIN`/`QOS` command).
+    ///
+    /// The returned `Ok(())` means the command was SENT; the server's verdict
+    /// arrives asynchronously as a [`StreamEvent::Response`] with
+    /// `service == "ADMIN"` and `command == "QOS"` (`code` 0 = accepted).
+    /// Whether current Schwab streamers honor QOS at all is undocumented —
+    /// verify empirically by measuring update cadence.
+    ///
+    /// The requested level is remembered and re-sent after an automatic
+    /// reconnect, before subscriptions are replayed.
+    ///
+    /// # Errors
+    /// Returns [`crate::Error::StreamProtocol`] if the command cannot be
+    /// serialized or the session command loop is stopped.
+    #[tracing::instrument(skip_all)]
+    pub async fn set_qos(&self, level: QosLevel) -> crate::Result<()> {
+        let message = protocol::build_qos(
+            QOS_REQUEST_ID,
+            &self.credentials.customer_id,
+            &self.credentials.correl_id,
+            level as u8,
+        )?;
+
+        // Store before sending so a concurrent reconnect replays the new
+        // level even if the send is still in flight (same pattern as
+        // subscribe_service). Roll back to the previous level on failure.
+        let previous = {
+            let mut qos = self.qos.lock().await;
+            std::mem::replace(&mut *qos, Some(level as u8))
+        };
+
+        let (ack_tx, ack_rx) = oneshot::channel();
+        let send_result = self
+            .cmd_tx
+            .send(SessionCommand::Send {
+                text: message,
+                ack: ack_tx,
+            })
+            .await;
+
+        let result = match send_result {
+            Ok(()) => ack_rx
+                .await
+                .map_err(|e| crate::Error::StreamProtocol(e.to_string()))
+                .and_then(|r| r),
+            Err(e) => Err(crate::Error::StreamProtocol(e.to_string())),
+        };
+
+        if result.is_err() {
+            *self.qos.lock().await = previous;
+        }
+
+        result
     }
 
     /// Subscribe to streaming events from this session.
@@ -662,6 +746,7 @@ async fn run_message_loop<T: WsTransport + 'static>(
     mut logout_rx: mpsc::Receiver<LogoutAck>,
     event_tx: broadcast::Sender<StreamEvent>,
     subs: Arc<Mutex<Vec<StoredSub>>>,
+    qos: Arc<Mutex<Option<u8>>>,
     credentials: Arc<SessionCredentials>,
 ) {
     loop {
@@ -678,7 +763,7 @@ async fn run_message_loop<T: WsTransport + 'static>(
                                 error: Some(error_text),
                             });
                             let _ = transport.close().await;
-                            match wait_for_reconnect::<T>(&event_tx, &subs, &credentials, &mut logout_rx).await {
+                            match wait_for_reconnect::<T>(&event_tx, &subs, &qos, &credentials, &mut logout_rx).await {
                                 ReconnectOutcome::Connected(new_transport) => transport = new_transport,
                                 ReconnectOutcome::Stopped => break,
                             }
@@ -699,7 +784,7 @@ async fn run_message_loop<T: WsTransport + 'static>(
                         DispatchAction::Reconnect(error) => {
                             let _ = event_tx.send(StreamEvent::Disconnected { error: Some(error) });
                             let _ = transport.close().await;
-                            match wait_for_reconnect::<T>(&event_tx, &subs, &credentials, &mut logout_rx).await {
+                            match wait_for_reconnect::<T>(&event_tx, &subs, &qos, &credentials, &mut logout_rx).await {
                                 ReconnectOutcome::Connected(new_transport) => transport = new_transport,
                                 ReconnectOutcome::Stopped => break,
                             }
@@ -713,7 +798,7 @@ async fn run_message_loop<T: WsTransport + 'static>(
                     Ok(None) => {
                         let _ = event_tx.send(StreamEvent::Disconnected { error: None });
                         let _ = transport.close().await;
-                        match wait_for_reconnect::<T>(&event_tx, &subs, &credentials, &mut logout_rx).await {
+                        match wait_for_reconnect::<T>(&event_tx, &subs, &qos, &credentials, &mut logout_rx).await {
                             ReconnectOutcome::Connected(new_transport) => transport = new_transport,
                             ReconnectOutcome::Stopped => break,
                         }
@@ -723,7 +808,7 @@ async fn run_message_loop<T: WsTransport + 'static>(
                             error: Some(error.to_string()),
                         });
                         let _ = transport.close().await;
-                        match wait_for_reconnect::<T>(&event_tx, &subs, &credentials, &mut logout_rx).await {
+                        match wait_for_reconnect::<T>(&event_tx, &subs, &qos, &credentials, &mut logout_rx).await {
                             ReconnectOutcome::Connected(new_transport) => transport = new_transport,
                             ReconnectOutcome::Stopped => break,
                         }
@@ -764,10 +849,11 @@ enum ReconnectOutcome<T> {
 async fn wait_for_reconnect<T: WsTransport>(
     event_tx: &broadcast::Sender<StreamEvent>,
     subs: &Arc<Mutex<Vec<StoredSub>>>,
+    qos: &Arc<Mutex<Option<u8>>>,
     credentials: &SessionCredentials,
     logout_rx: &mut mpsc::Receiver<LogoutAck>,
 ) -> ReconnectOutcome<T> {
-    let reconnect = reconnect::<T>(credentials, event_tx, subs);
+    let reconnect = reconnect::<T>(credentials, event_tx, subs, qos);
     tokio::pin!(reconnect);
 
     tokio::select! {
@@ -918,6 +1004,7 @@ async fn reconnect<T: WsTransport>(
     credentials: &SessionCredentials,
     event_tx: &broadcast::Sender<StreamEvent>,
     subs: &Arc<Mutex<Vec<StoredSub>>>,
+    qos: &Arc<Mutex<Option<u8>>>,
 ) -> Option<T> {
     let mut delay = tokio::time::Duration::from_secs(1);
     let max_delay = tokio::time::Duration::from_secs(30);
@@ -953,6 +1040,12 @@ async fn reconnect<T: WsTransport>(
             }
         }
 
+        if let Err(error) = replay_qos(&mut transport, credentials, qos).await {
+            tracing::warn!("reconnect attempt {attempt} failed during QOS replay: {error}");
+            delay = (delay * 2).min(max_delay);
+            continue;
+        }
+
         if let Err(error) = replay_subscriptions(&mut transport, credentials, subs).await {
             tracing::warn!(
                 "reconnect attempt {attempt} failed during subscription replay: {error}"
@@ -968,6 +1061,27 @@ async fn reconnect<T: WsTransport>(
         error: Some("max reconnect attempts exceeded".to_string()),
     });
     None
+}
+
+/// Re-send the requested QOS level (if any) after a reconnect, BEFORE the
+/// subscriptions are replayed — otherwise the fresh session silently reverts
+/// to the server's default conflation interval.
+async fn replay_qos<T: WsTransport>(
+    transport: &mut T,
+    credentials: &SessionCredentials,
+    qos: &Arc<Mutex<Option<u8>>>,
+) -> crate::Result<()> {
+    let level = *qos.lock().await;
+    if let Some(level) = level {
+        let message = protocol::build_qos(
+            QOS_REQUEST_ID,
+            &credentials.customer_id,
+            &credentials.correl_id,
+            level,
+        )?;
+        transport.send(message).await?;
+    }
+    Ok(())
 }
 
 async fn replay_subscriptions<T: WsTransport>(
@@ -1142,6 +1256,27 @@ mod tests {
         assert_eq!(item["command"], "SUBS");
         assert_eq!(item["parameters"]["keys"], "AAPL");
         assert_eq!(item["parameters"]["fields"], "0,1");
+    }
+
+    #[tokio::test]
+    async fn session_set_qos_sends_admin_qos_command() {
+        let transport = MockTransport::new(vec![Ok(Some(fixture("streaming_login_success.json")))]);
+        let sent = transport.sent_handle();
+        let session = StreamingSession::new(transport, credentials())
+            .await
+            .unwrap();
+
+        session.set_qos(QosLevel::Express).await.unwrap();
+        let sent = sent.lock().await;
+        let qos: serde_json::Value = serde_json::from_str(&sent[1]).unwrap();
+        let item = &qos["requests"][0];
+
+        assert_eq!(sent.len(), 2);
+        assert_eq!(item["service"], "ADMIN");
+        assert_eq!(item["command"], "QOS");
+        assert_eq!(item["parameters"]["qoslevel"], "0");
+        // The level is remembered for replay after a reconnect.
+        assert_eq!(*session.qos.lock().await, Some(0));
     }
 
     #[tokio::test]

@@ -62,7 +62,7 @@ pub use options::{
     TransactionListOptions,
 };
 pub use order_builder::OrderBuilder;
-pub use stream_session::StreamingSession;
+pub use stream_session::{QosLevel, StreamingSession};
 
 #[cfg(test)]
 mod test_support;

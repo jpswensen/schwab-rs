@@ -51,6 +51,8 @@ pub(crate) struct StreamParameters {
     pub(crate) keys: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) fields: Option<String>,
+    #[serde(rename = "qoslevel", skip_serializing_if = "Option::is_none")]
+    pub(crate) qoslevel: Option<String>,
 }
 
 impl std::fmt::Debug for StreamParameters {
@@ -64,6 +66,7 @@ impl std::fmt::Debug for StreamParameters {
             .field("schwab_client_function_id", &self.schwab_client_function_id)
             .field("keys", &self.keys)
             .field("fields", &self.fields)
+            .field("qoslevel", &self.qoslevel)
             .finish()
     }
 }
@@ -232,6 +235,33 @@ pub(crate) fn build_logout(customer_id: &str, correl_id: &str) -> crate::Result<
             schwab_client_customer_id: customer_id.to_string(),
             schwab_client_correl_id: correl_id.to_string(),
             parameters: StreamParameters::default(),
+        }],
+    };
+    serde_json::to_string(&req).map_err(crate::Error::Encode)
+}
+
+/// Build a serialized QOS request.
+///
+/// Asks the streamer to change the update conflation interval. The level is
+/// serialized as a string per the Schwab/TDA streamer wire format
+/// (`"0"` Express 500ms … `"5"` Delayed 5000ms).
+pub(crate) fn build_qos(
+    request_id: &str,
+    customer_id: &str,
+    correl_id: &str,
+    level: u8,
+) -> crate::Result<String> {
+    let req = StreamRequest {
+        requests: vec![StreamRequestItem {
+            requestid: request_id.to_string(),
+            service: "ADMIN".to_string(),
+            command: "QOS".to_string(),
+            schwab_client_customer_id: customer_id.to_string(),
+            schwab_client_correl_id: correl_id.to_string(),
+            parameters: StreamParameters {
+                qoslevel: Some(level.to_string()),
+                ..Default::default()
+            },
         }],
     };
     serde_json::to_string(&req).map_err(crate::Error::Encode)
@@ -414,6 +444,21 @@ mod tests {
             debug.contains("<redacted>"),
             "redaction marker missing: {debug}"
         );
+    }
+
+    #[test]
+    fn qos_request_shape() {
+        let json = build_qos("99", "cust123", "correl456", 0).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let item = &v["requests"][0];
+        assert_eq!(item["service"], "ADMIN");
+        assert_eq!(item["command"], "QOS");
+        assert_eq!(item["requestid"], "99");
+        assert_eq!(item["SchwabClientCustomerId"], "cust123");
+        assert_eq!(item["SchwabClientCorrelId"], "correl456");
+        // Level travels as a STRING, and no other parameters are present.
+        assert_eq!(item["parameters"]["qoslevel"], "0");
+        assert_eq!(item["parameters"].as_object().unwrap().len(), 1);
     }
 
     #[test]
