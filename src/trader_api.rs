@@ -440,7 +440,23 @@ impl Client {
     #[instrument(skip_all)]
     pub async fn get_user_preference(&self) -> Result<Vec<UserPreference>> {
         let url = self.endpoint_url(ApiBase::Trader, &["userPreference"])?;
-        self.send_json(Method::GET, url, &[], None).await
+        // The OpenAPI spec models this response as an array, but the live API
+        // returns a single UserPreference object ({"accounts": [...],
+        // "streamerInfo": [...], "offers": [...]}). Accept both shapes.
+        let value: serde_json::Value = self.send_json(Method::GET, url, &[], None).await?;
+        match value {
+            serde_json::Value::Array(_) => {
+                let body = value.to_string();
+                serde_json::from_value::<Vec<UserPreference>>(value)
+                    .map_err(|source| Error::Decode { source, body })
+            }
+            other => {
+                let body = other.to_string();
+                let pref = serde_json::from_value::<UserPreference>(other)
+                    .map_err(|source| Error::Decode { source, body })?;
+                Ok(vec![pref])
+            }
+        }
     }
 }
 
@@ -450,6 +466,48 @@ mod tests {
     use serde_json::json;
 
     use crate::*;
+
+    /// Regression: the live /userPreference endpoint returns a single object,
+    /// not the array the OpenAPI spec describes. Both must decode.
+    #[tokio::test]
+    async fn get_user_preference_accepts_object_and_array_responses() {
+        let object_body = r#"{"accounts":[{"accountNumber":"123","primaryAccount":true}],"streamerInfo":[{"streamerSocketUrl":"wss://example.test/ws","schwabClientCustomerId":"CUST","schwabClientCorrelId":"CORR","schwabClientChannel":"IO","schwabClientFunctionId":"APIAPP"}],"offers":[{"level2Permissions":true}]}"#;
+        let mut server = mockito::Server::new_async().await;
+        let config = Config::new()
+            .trader_base_url(&server.url())
+            .unwrap()
+            .bearer_token("TOKEN");
+        let client = Client::new(config);
+
+        // live shape: single object
+        let mock = server
+            .mock("GET", "/userPreference")
+            .with_status(200)
+            .with_body(object_body)
+            .create_async()
+            .await;
+        let prefs = client.get_user_preference().await.unwrap();
+        mock.assert_async().await;
+        assert_eq!(prefs.len(), 1);
+        let info = prefs[0].streamer_info.as_ref().unwrap();
+        assert_eq!(info[0].schwab_client_customer_id.as_deref(), Some("CUST"));
+        assert_eq!(
+            info[0].streamer_socket_url.as_deref(),
+            Some("wss://example.test/ws")
+        );
+
+        // spec shape: array of objects
+        let mock = server
+            .mock("GET", "/userPreference")
+            .with_status(200)
+            .with_body(format!("[{object_body}]"))
+            .create_async()
+            .await;
+        let prefs = client.get_user_preference().await.unwrap();
+        mock.assert_async().await;
+        assert_eq!(prefs.len(), 1);
+        assert!(prefs[0].streamer_info.is_some());
+    }
 
     #[tokio::test]
     async fn get_account_uses_trader_base_url_path_escaping_and_bearer_auth() {
