@@ -141,6 +141,61 @@ impl StreamingSession {
         })
     }
 
+    /// The `SchwabClientChannel` this session logged in with (from user
+    /// preferences). Exposed for protocol experimentation.
+    #[must_use]
+    pub fn client_channel(&self) -> &str {
+        &self.credentials.channel
+    }
+
+    /// The `SchwabClientFunctionId` this session logged in with (from user
+    /// preferences). Exposed for protocol experimentation.
+    #[must_use]
+    pub fn client_function_id(&self) -> &str {
+        &self.credentials.function_id
+    }
+
+    /// Send an arbitrary `ADMIN` command with caller-supplied parameters.
+    ///
+    /// Advanced/experimental API: builds the standard request envelope
+    /// (request id, service `ADMIN`, customer/correl ids) around the given
+    /// `parameters` object and sends it. The server's verdict arrives as a
+    /// [`StreamEvent::Response`] carrying the same `request_id`. Useful for
+    /// probing undocumented commands (e.g. QOS format variants) without
+    /// patching the crate for each attempt.
+    ///
+    /// # Errors
+    /// Returns [`crate::Error::StreamProtocol`] if the command cannot be
+    /// serialized or the session command loop is stopped.
+    pub async fn send_admin_command(
+        &self,
+        request_id: &str,
+        command: &str,
+        parameters: serde_json::Value,
+    ) -> crate::Result<()> {
+        let request = serde_json::json!({
+            "requests": [{
+                "requestid": request_id,
+                "service": "ADMIN",
+                "command": command,
+                "SchwabClientCustomerId": self.credentials.customer_id,
+                "SchwabClientCorrelId": self.credentials.correl_id,
+                "parameters": parameters,
+            }]
+        });
+        let text = serde_json::to_string(&request).map_err(crate::Error::Encode)?;
+
+        let (ack_tx, ack_rx) = oneshot::channel();
+        self.cmd_tx
+            .send(SessionCommand::Send { text, ack: ack_tx })
+            .await
+            .map_err(|e| crate::Error::StreamProtocol(e.to_string()))?;
+        ack_rx
+            .await
+            .map_err(|e| crate::Error::StreamProtocol(e.to_string()))
+            .and_then(|r| r)
+    }
+
     /// Request a streamer update-conflation interval (`ADMIN`/`QOS` command).
     ///
     /// The returned `Ok(())` means the command was SENT; the server's verdict
