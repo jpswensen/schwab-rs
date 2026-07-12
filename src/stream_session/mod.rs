@@ -201,8 +201,12 @@ impl StreamingSession {
     /// The returned `Ok(())` means the command was SENT; the server's verdict
     /// arrives asynchronously as a [`StreamEvent::Response`] with
     /// `service == "ADMIN"` and `command == "QOS"` (`code` 0 = accepted).
-    /// Whether current Schwab streamers honor QOS at all is undocumented —
-    /// verify empirically by measuring update cadence.
+    /// FIELD-TESTED 2026-07-12: the current Schwab streamer REJECTS this
+    /// command with code 21 "Bad command formatting" in every known format
+    /// (string/number level, with/without LOGIN-style session ids, key-case
+    /// variants — the TDA-era format tda-api used verbatim included; note
+    /// schwab-py, the same author's Schwab port, dropped QOS entirely). The
+    /// update cadence is server-fixed. Kept in case Schwab reintroduces it.
     ///
     /// The requested level is remembered and re-sent after an automatic
     /// reconnect, before subscriptions are replayed.
