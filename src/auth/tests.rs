@@ -608,12 +608,17 @@ async fn exchange_code_with_client_exchanges_auth_code_for_token() {
 }
 
 #[tokio::test]
-async fn token_request_maps_400_invalid_grant_to_refresh_token_invalid() {
+async fn authorization_code_400_invalid_grant_surfaces_oauth_error() {
+    // The authorization_code exchange must NOT be mislabeled as a bad refresh
+    // token; it surfaces the standardized OAuth error instead (RefreshTokenInvalid
+    // is reserved for the refresh grant — see refresh_token_file tests).
     let mut server = mockito::Server::new_async().await;
     server
         .mock("POST", "/token")
         .with_status(400)
-        .with_body(r#"{"error":"invalid_grant"}"#)
+        .with_body(
+            r#"{"error":"unsupported_token_type","error_description":"Authorization code is invalid, expired or revoked"}"#,
+        )
         .create_async()
         .await;
 
@@ -623,7 +628,38 @@ async fn token_request_maps_400_invalid_grant_to_refresh_token_invalid() {
         .await
         .unwrap_err();
 
-    assert_matches!(error, Error::RefreshTokenInvalid);
+    assert_matches!(
+        &error,
+        Error::OAuth { status: 400, error, description }
+            if error == "unsupported_token_type"
+                && description == "Authorization code is invalid, expired or revoked"
+    );
+    // The human-readable reason must appear in the Display output.
+    assert!(
+        error.to_string().contains("Authorization code is invalid, expired or revoked"),
+        "Display must surface the OAuth error_description, got: {error}"
+    );
+}
+
+#[tokio::test]
+async fn token_request_maps_non_oauth_400_to_http_status() {
+    // A 400 whose body is not a parseable OAuth error falls back to the redacted
+    // HttpStatus variant.
+    let mut server = mockito::Server::new_async().await;
+    server
+        .mock("POST", "/token")
+        .with_status(400)
+        .with_body("not json")
+        .create_async()
+        .await;
+
+    let url = server.url();
+    let config = test_config(&url);
+    let error = exchange_code_with_client(&config, "CODE", &reqwest::Client::new())
+        .await
+        .unwrap_err();
+
+    assert_matches!(error, Error::HttpStatus { status: 400, .. });
 }
 
 #[tokio::test]

@@ -236,6 +236,10 @@ impl TokenFile {
 #[derive(Deserialize)]
 struct OAuthErrorBody {
     error: Option<String>,
+    /// The standardized OAuth `error_description` field. Protocol-level text
+    /// (e.g. "Authorization code is invalid, expired or revoked") — safe to
+    /// surface, unlike an arbitrary response body.
+    error_description: Option<String>,
 }
 
 /// Storage backend for persisted Schwab OAuth tokens.

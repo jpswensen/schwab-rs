@@ -301,8 +301,29 @@ async fn token_request(
         let bytes = response.bytes().await.map_err(Error::Request)?;
         let body =
             String::from_utf8_lossy(&bytes[..bytes.len().min(OAUTH_ERROR_BODY_LIMIT)]).into_owned();
-        if status.as_u16() == 400 && is_invalid_grant_error(&body) {
+        // Runtime auto-refresh relies on RefreshTokenInvalid to know when a new
+        // browser login is due. Only map it on the *refresh* grant so an expired
+        // authorization code is not mislabeled "refresh token is expired".
+        let is_refresh_grant = form
+            .iter()
+            .any(|(key, value)| *key == "grant_type" && *value == "refresh_token");
+        if status.as_u16() == 400 && is_refresh_grant && is_invalid_grant_error(&body) {
             return Err(Error::RefreshTokenInvalid);
+        }
+        // Surface the standardized OAuth error fields when Schwab sent them
+        // (protocol-level strings, safe to display); otherwise fall back to the
+        // redacted HttpStatus. Requires reqwest's `gzip` feature — Schwab gzips
+        // these bodies even when no Accept-Encoding is requested.
+        if let Ok(OAuthErrorBody {
+            error: Some(error),
+            error_description,
+        }) = serde_json::from_str::<OAuthErrorBody>(&body)
+        {
+            return Err(Error::OAuth {
+                status: status.as_u16(),
+                error,
+                description: error_description.unwrap_or_default(),
+            });
         }
         return Err(Error::HttpStatus {
             status: status.as_u16(),

@@ -91,6 +91,18 @@ pub enum Error {
         /// The response body, truncated for safety.
         body: String,
     },
+    /// Schwab returned a standardized OAuth error at the token endpoint. Unlike
+    /// [`Error::HttpStatus`], the fields here are OAuth-protocol strings (not an
+    /// arbitrary body), so they are safe to surface in messages and logs.
+    #[error("Schwab OAuth {error} (HTTP {status}): {description}")]
+    OAuth {
+        /// The HTTP status code returned by Schwab.
+        status: u16,
+        /// The OAuth `error` code (e.g. "invalid_grant", "unsupported_token_type").
+        error: String,
+        /// The OAuth `error_description`, or "" when Schwab sent none.
+        description: String,
+    },
     /// The HTTP request failed before a response body could be decoded.
     #[error("HTTP request failed: {0}")]
     Request(#[source] reqwest::Error),
@@ -161,6 +173,16 @@ impl std::fmt::Debug for Error {
                 .debug_struct("HttpStatus")
                 .field("status", status)
                 .field("body", &"<redacted>")
+                .finish(),
+            Self::OAuth {
+                status,
+                error,
+                description,
+            } => formatter
+                .debug_struct("OAuth")
+                .field("status", status)
+                .field("error", error)
+                .field("description", description)
                 .finish(),
             Self::Request(error) => formatter.debug_tuple("Request").field(error).finish(),
             Self::Decode { source, .. } => formatter
