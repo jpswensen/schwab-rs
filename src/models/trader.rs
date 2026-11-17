@@ -1588,4 +1588,60 @@ mod tests {
             Some("wss://streamer.schwab.com/ws".to_string())
         );
     }
+
+    /// Regression (2026-11-16): an overnight thinkorswim order came back with
+    /// `"session": "EXTO"`. `Session` had no catch-all, so the WHOLE
+    /// `GET /accounts/{hash}/orders` response failed to decode and every order
+    /// disappeared. Unknown enum values must degrade to `Unknown`, not fail the list.
+    #[test]
+    fn unknown_enum_values_in_orders_decode_to_unknown() {
+        let json = r#"[{
+            "session": "EXTO",
+            "duration": "SOME_NEW_DURATION",
+            "orderType": "SOME_NEW_TYPE",
+            "requestedDestination": "SOME_NEW_VENUE",
+            "orderStrategyType": "SOME_NEW_STRATEGY",
+            "complexOrderStrategyType": "SOME_NEW_COMPLEX",
+            "specialInstruction": "SOME_NEW_SPECIAL",
+            "orderId": 100003,
+            "quantity": 54.0,
+            "status": "WORKING",
+            "orderLegCollection": [{
+                "instruction": "SOME_NEW_INSTRUCTION",
+                "positionEffect": "SOME_NEW_EFFECT",
+                "quantity": 54.0,
+                "instrument": {"assetType": "EQUITY", "symbol": "LRCX"}
+            }]
+        }, {
+            "session": "NORMAL",
+            "duration": "DAY",
+            "orderType": "LIMIT",
+            "orderId": 100004,
+            "status": "FILLED"
+        }]"#;
+
+        let orders: Vec<Order> = serde_json::from_str(json).unwrap();
+        assert_eq!(orders.len(), 2);
+        let o = &orders[0];
+        assert_eq!(o.order_id, Some(100003));
+        assert_eq!(o.session, Some(Session::Unknown));
+        assert_eq!(o.duration, Some(Duration::Unknown));
+        assert_eq!(o.order_type, Some(OrderType::Unknown));
+        assert_eq!(o.requested_destination, Some(RequestedDestination::Unknown));
+        assert_eq!(o.order_strategy_type, Some(OrderStrategyType::Unknown));
+        assert_eq!(
+            o.complex_order_strategy_type,
+            Some(ComplexOrderStrategyType::Unknown)
+        );
+        assert_eq!(o.special_instruction, Some(SpecialInstruction::Unknown));
+        assert_eq!(o.status, Some(OrderStatus::Working));
+        let leg = &o.order_leg_collection.as_ref().unwrap()[0];
+        assert_eq!(leg.instruction, Some(Instruction::Unknown));
+        assert_eq!(leg.position_effect, Some(PositionEffect::Unknown));
+
+        // Known values are untouched.
+        assert_eq!(orders[1].session, Some(Session::Normal));
+        assert_eq!(orders[1].duration, Some(Duration::Day));
+        assert_eq!(orders[1].order_type, Some(OrderType::Limit));
+    }
 }

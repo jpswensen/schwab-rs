@@ -369,6 +369,7 @@ pub enum ApiRuleAction {
     Alert,
     Reject,
     Review,
+    #[serde(other)]
     Unknown,
 }
 
@@ -382,6 +383,9 @@ pub enum ApiCurrencyType {
     Cad,
     Eur,
     Jpy,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Cash equivalent instrument type.
@@ -478,6 +482,7 @@ pub enum FeeType {
     IndexOptionFee,
     TefraTax,
     StateTax,
+    #[serde(other)]
     Unknown,
 }
 
@@ -521,6 +526,9 @@ pub enum IndexType {
 pub enum OrderActivityType {
     Execution,
     OrderAction,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Order execution activity type.
@@ -543,6 +551,9 @@ pub enum ExecutionType {
 pub enum DividendCapitalGains {
     Reinvest,
     Payout,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Position opening or closing effect.
@@ -554,6 +565,7 @@ pub enum PositionEffect {
     Opening,
     Closing,
     Automatic,
+    #[serde(other)]
     Unknown,
 }
 
@@ -566,6 +578,9 @@ pub enum QuantityType {
     AllShares,
     Dollars,
     Shares,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Advanced order strategy type.
@@ -585,6 +600,9 @@ pub enum AdvancedOrderType {
     BlastAll,
     Ota,
     Pair,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Product instrument type.
@@ -605,6 +623,9 @@ pub enum ProductType {
 pub enum SecuritiesAccountType {
     Cash,
     Margin,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Transaction activity classification.
@@ -617,6 +638,7 @@ pub enum TransactionActivityType {
     Execution,
     OrderAction,
     Transfer,
+    #[serde(other)]
     Unknown,
 }
 
@@ -629,6 +651,7 @@ pub enum TransactionStatus {
     Valid,
     Invalid,
     Pending,
+    #[serde(other)]
     Unknown,
 }
 
@@ -643,6 +666,7 @@ pub enum SubAccount {
     Short,
     Div,
     Income,
+    #[serde(other)]
     Unknown,
 }
 
@@ -729,6 +753,9 @@ pub enum TransactionType {
     MarginCall,
     MoneyMarket,
     SmaAdjustment,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// User classification.
@@ -741,6 +768,7 @@ pub enum UserType {
     BrokerUser,
     ClientUser,
     SystemUser,
+    #[serde(other)]
     Unknown,
 }
 
@@ -754,6 +782,7 @@ pub enum AmountIndicator {
     Shares,
     AllShares,
     Percentage,
+    #[serde(other)]
     Unknown,
 }
 
@@ -804,6 +833,9 @@ pub enum AssetType {
     Product,
     Currency,
     CollectiveInvestment,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Complex order strategy classification.
@@ -833,6 +865,9 @@ pub enum ComplexOrderStrategyType {
     UnbalancedVerticalRoll,
     MutualFundSwap,
     Custom,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Order time-in-force duration.
@@ -848,6 +883,7 @@ pub enum Duration {
     EndOfWeek,
     EndOfMonth,
     NextEndOfMonth,
+    #[serde(other)]
     Unknown,
 }
 
@@ -867,6 +903,9 @@ pub enum Instruction {
     SellToClose,
     Exchange,
     SellShortExempt,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Order strategy classification.
@@ -884,6 +923,9 @@ pub enum OrderStrategyType {
     BlastAll,
     Oco,
     Trigger,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Order type classification.
@@ -906,6 +948,7 @@ pub enum OrderType {
     NetCredit,
     NetZero,
     LimitOnClose,
+    #[serde(other)]
     Unknown,
 }
 
@@ -946,6 +989,9 @@ pub enum PriceLinkBasis {
     AskBid,
     Mark,
     Average,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Order price link adjustment type.
@@ -957,6 +1003,9 @@ pub enum PriceLinkType {
     Value,
     Percent,
     Tick,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Order routing destination.
@@ -977,6 +1026,9 @@ pub enum RequestedDestination {
     Bats,
     C2,
     Auto,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Trading session classification.
@@ -989,6 +1041,9 @@ pub enum Session {
     Am,
     Pm,
     Seamless,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Order settlement instruction.
@@ -1000,6 +1055,7 @@ pub enum SettlementInstruction {
     Regular,
     Cash,
     NextDay,
+    #[serde(other)]
     Unknown,
 }
 
@@ -1012,6 +1068,9 @@ pub enum SpecialInstruction {
     AllOrNone,
     DoNotReduce,
     AllOrNoneDoNotReduce,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Stop price link reference basis.
@@ -1029,6 +1088,9 @@ pub enum StopPriceLinkBasis {
     AskBid,
     Mark,
     Average,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Stop price link adjustment type.
@@ -1040,6 +1102,9 @@ pub enum StopPriceLinkType {
     Value,
     Percent,
     Tick,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Stop trigger price type.
@@ -1053,6 +1118,9 @@ pub enum StopType {
     Ask,
     Last,
     Mark,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
 
 /// Tax lot selection method.
@@ -1068,4 +1136,7 @@ pub enum TaxLotMethod {
     AverageCost,
     SpecificLot,
     LossHarvester,
+    /// Any value this crate does not know yet (Schwab adds them without notice).
+    #[serde(other)]
+    Unknown,
 }
